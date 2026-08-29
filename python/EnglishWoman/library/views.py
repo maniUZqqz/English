@@ -10,7 +10,7 @@ from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from app.usage import QuotaExceeded, consume_ai_quota, record_activity
+from app.usage import QuotaExceeded, award_xp, consume_ai_quota, record_activity
 from app.views import quota_exceeded_page
 from EnglishWoman.services import AIDisabled, chat_completion, extract_json, strip_code_fence
 from app.models import UserLevel
@@ -193,7 +193,7 @@ def teach_section(request, pk):
         ])
         html = markdown.markdown(strip_code_fence(md_content), extensions=['tables'])
         SectionLesson.objects.create(section=section, lesson_html=html)
-        record_activity(request.user)
+        award_xp(request.user, 5)
         messages.success(request, 'درس این بخش آماده شد! 🎓')
     except AIDisabled:
         return render(request, 'app/ai_error.html', status=503)

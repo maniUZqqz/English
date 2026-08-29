@@ -75,11 +75,16 @@
             <h2 class="mb-1">سلام {{ user.username }} عزیز 👋</h2>
             <p class="lead mb-0">امروز چی تمرین کنیم؟</p>
         </div>
-        {% if words_due %}
-            <a href="{% url 'tool_review' %}" class="btn btn-light fw-bold">
-                <i class="fas fa-clone ms-2 text-warning"></i>{{ words_due }} لغت منتظر مرور!
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            {% if words_due %}
+                <a href="{% url 'tool_review' %}" class="btn btn-light fw-bold">
+                    <i class="fas fa-clone ms-2 text-warning"></i>{{ words_due }} لغت منتظر مرور!
+                </a>
+            {% endif %}
+            <a href="{% url 'leaderboard' %}" class="btn btn-light fw-bold" title="رتبه‌بندی">
+                <i class="fas fa-trophy ms-2 text-warning"></i>{{ xp }} XP · سطح {{ xp_level }}
             </a>
-        {% endif %}
+        </div>
     </div>
 
     <!-- آمار -->

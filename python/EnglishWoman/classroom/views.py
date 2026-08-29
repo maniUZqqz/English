@@ -11,7 +11,8 @@ from django.utils import timezone
 from django.utils.html import strip_tags
 
 from app.models import UserLevel, UserProfile
-from app.usage import QuotaExceeded, consume_ai_quota, current_streak, record_activity
+from app.usage import (QuotaExceeded, award_xp, consume_ai_quota, current_streak,
+                       record_activity)
 from app.views import quota_exceeded_page
 from EnglishWoman.services import AIDisabled, chat_completion, extract_json
 from .forms import (AnnouncementForm, AssignmentForm, ClassroomForm, CommentForm,
@@ -276,10 +277,13 @@ def submit_assignment(request, pk):
             return redirect('assignment_detail', pk=pk)
         form = SubmissionForm(request.POST, request.FILES, instance=submission)
         if form.is_valid():
+            is_new = submission is None
             obj = form.save(commit=False)
             obj.assignment = assignment
             obj.student = request.user
             obj.save()
+            if is_new:
+                award_xp(request.user, 10)
             record_activity(request.user)
             messages.success(request, 'تکلیف شما ثبت شد. ✅')
         else:
@@ -334,6 +338,17 @@ def remove_student(request, pk, student_id):
 
 
 # ---------- برنامه هفتگی و جلسات ----------
+
+@teacher_required
+def set_live_url(request, pk):
+    """تنظیم لینک سفارشی کلاس زنده (خالی = اتاق خودکار Jitsi)."""
+    classroom = get_object_or_404(Classroom, pk=pk, teacher=request.user)
+    if request.method == 'POST':
+        classroom.live_url = request.POST.get('live_url', '').strip()[:200]
+        classroom.save()
+        messages.success(request, 'لینک کلاس زنده به‌روزرسانی شد.')
+    return redirect('class_detail', pk=pk)
+
 
 @teacher_required
 def add_schedule(request, pk):
@@ -598,6 +613,8 @@ def take_exam(request, pk):
     attempt.finished_at = timezone.now()
     attempt.save()
     record_activity(request.user)
+    if not out_of_time and attempt.score:
+        award_xp(request.user, max(attempt.score // 10, 1))
     if out_of_time:
         messages.error(request, 'پاسخ‌ها بعد از پایان زمان رسید و ثبت نشد — نمره: ۰')
     else:

@@ -17,7 +17,7 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 
 from app.models import UserLevel
-from app.usage import QuotaExceeded, consume_ai_quota, record_activity
+from app.usage import QuotaExceeded, award_xp, consume_ai_quota, record_activity
 from EnglishWoman.services import AIDisabled, chat_completion, extract_json
 from .models import ChatMessage, SavedWord, WritingSubmission
 
@@ -127,7 +127,7 @@ def api_review_word(request):
         if not word:
             return JsonResponse({'error': 'Word not found.'}, status=404)
         word.mark_reviewed(known=bool(data.get('known')))
-        record_activity(request.user)
+        award_xp(request.user, 1)
         return JsonResponse({'ok': True, 'box': word.box, 'next_review': str(word.next_review)})
     except Exception as e:
         print('api_review_word error:', e)
@@ -222,7 +222,7 @@ def api_writing_score(request):
             feedback=str(parsed.get('feedback', '')),
             improved_version=str(parsed.get('improved_version', '')),
         )
-        record_activity(request.user)
+        award_xp(request.user, 10)  # تکمیل یک تمرین نوشتاری
         return JsonResponse({
             'score': submission.score,
             'band': submission.band,
@@ -527,6 +527,8 @@ def api_save_word(request):
                 'example': str(data.get('example', ''))[:2000],
             },
         )
+        if created:
+            award_xp(request.user, 1)
         return JsonResponse({'saved': True, 'created': created, 'id': obj.id})
     except Exception as e:
         print('api_save_word error:', e)

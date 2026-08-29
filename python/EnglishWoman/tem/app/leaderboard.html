@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}رتبه‌بندی — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .lb-row {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.8rem 1rem;
+        border-radius: 12px;
+        margin-bottom: 0.4rem;
+    }
+
+    .lb-row.me { background: rgba(52, 152, 219, 0.12); border: 1px solid var(--brand); }
+    .lb-row:not(.me) { background: var(--surface-2); }
+
+    .lb-rank {
+        width: 40px;
+        text-align: center;
+        font-weight: 800;
+        font-size: 1.1rem;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .lb-avatar {
+        width: 40px; height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #3498db, #2980b9);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+    }
+
+    .my-rank-card {
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: white;
+        border-radius: 15px;
+        padding: 1.4rem 2rem;
+        display: flex;
+        justify-content: space-around;
+        text-align: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .my-rank-card .val { font-size: 1.7rem; font-weight: 800; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 680px;">
+    <h3 class="mb-3"><i class="fas fa-trophy ms-2 text-warning"></i>رتبه‌بندی زبان‌آموزها</h3>
+
+    <div class="my-rank-card">
+        <div><div class="val">#{{ my_rank }}</div><div class="small">رتبه من</div></div>
+        <div><div class="val">{{ my_profile.xp }}</div><div class="small">امتیاز (XP)</div></div>
+        <div><div class="val">{{ my_profile.xp_level }}</div><div class="small">سطح</div></div>
+    </div>
+
+    {% for row in rows %}
+        <div class="lb-row {% if row.is_me %}me{% endif %}">
+            <span class="lb-rank">
+                {% if row.rank == 1 %}🥇{% elif row.rank == 2 %}🥈{% elif row.rank == 3 %}🥉{% else %}{{ row.rank }}{% endif %}
+            </span>
+            <span class="lb-avatar">{{ row.profile.user.username|first|upper }}</span>
+            <span class="flex-grow-1 fw-bold">{{ row.profile.user.username }}{% if row.is_me %} <span class="small text-primary">(من)</span>{% endif %}</span>
+            <span class="small text-secondary">🔥 {{ row.streak }}</span>
+            <span class="status-chip chip-info">{{ row.profile.xp }} XP</span>
+        </div>
+    {% empty %}
+        <div class="text-center text-secondary py-4">
+            هنوز کسی امتیازی نگرفته — با تمرین، اولین نفر جدول باش! 🏆
+        </div>
+    {% endfor %}
+
+    <div class="small text-secondary mt-3">
+        💡 امتیاز می‌گیری با: پاسخ درست آزمون‌ها (+۲)، مرور لغت (+۱)، درس‌نامه جدید (+۵)،
+        تحویل تکلیف (+۱۰)، تمرین نوشتاری (+۱۰)، آزمون کلاسی (تا +۱۰) و تعیین سطح (+۱۵).
+    </div>
+</div>
+{% endblock %}

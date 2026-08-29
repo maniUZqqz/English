@@ -61,10 +61,16 @@ class UserProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     progress = models.PositiveIntegerField(default=0)   # درصد پیشرفت
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student')
+    xp = models.PositiveIntegerField(default=0)         # امتیاز گیمیفیکیشن
 
     @property
     def is_teacher(self):
         return self.role == 'teacher'
+
+    @property
+    def xp_level(self):
+        """هر ۱۰۰ امتیاز = یک سطح."""
+        return self.xp // 100 + 1
 
     def __str__(self):
         return f"{self.user.username} - {self.get_role_display()} - {self.progress}%"

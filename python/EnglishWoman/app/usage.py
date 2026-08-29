@@ -29,6 +29,14 @@ def record_activity(user):
     return activity
 
 
+def award_xp(user, amount):
+    """افزودن امتیاز گیمیفیکیشن (اتمیک) + ثبت فعالیت امروز."""
+    from .models import UserProfile
+    profile, _ = UserProfile.objects.get_or_create(user=user)
+    UserProfile.objects.filter(pk=profile.pk).update(xp=F('xp') + amount)
+    record_activity(user)
+
+
 def consume_ai_quota(user, amount=1):
     """
     یک واحد از سهمیه امروز کاربر کم می‌کند (اتمیک، امن در برابر همزمانی).

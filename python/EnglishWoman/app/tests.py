@@ -135,6 +135,41 @@ class QuotaTests(TestCase):
         self.assertTemplateUsed(response, 'app/quota_exceeded.html')
 
 
+class XPTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user('gamer', password='pass12345')
+
+    def test_award_xp_accumulates(self):
+        from .usage import award_xp
+        award_xp(self.user, 10)
+        award_xp(self.user, 5)
+        profile = UserProfile.objects.get(user=self.user)
+        self.assertEqual(profile.xp, 15)
+        self.assertEqual(profile.xp_level, 1)
+        award_xp(self.user, 90)
+        profile.refresh_from_db()
+        self.assertEqual(profile.xp_level, 2)
+
+    def test_correct_placement_answer_awards_xp(self):
+        self.client.login(username='gamer', password='pass12345')
+        q = Question.objects.create(
+            user=self.user, text='Q', option1='A', option2='B',
+            option3='C', option4='D', correct_option=1)
+        self.client.post(reverse('submit_response'), {'question_id': q.id, 'selected_option': 1})
+        self.assertEqual(UserProfile.objects.get(user=self.user).xp, 2)
+
+    def test_leaderboard_renders_with_rank(self):
+        from .usage import award_xp
+        award_xp(self.user, 50)
+        other = User.objects.create_user('rival', password='pass12345')
+        award_xp(other, 120)
+        self.client.login(username='gamer', password='pass12345')
+        page = self.client.get(reverse('leaderboard'))
+        self.assertEqual(page.status_code, 200)
+        self.assertContains(page, 'rival')
+        self.assertEqual(page.context['my_rank'], 2)
+
+
 class StreakTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user('streaky', password='pass12345')

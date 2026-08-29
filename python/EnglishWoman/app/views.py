@@ -12,7 +12,8 @@ from django.contrib.auth.decorators import login_required
 import markdown
 
 from EnglishWoman.services import chat_completion, extract_json
-from .usage import QuotaExceeded, consume_ai_quota, current_streak, record_activity, usage_today
+from .usage import (QuotaExceeded, award_xp, consume_ai_quota, current_streak,
+                    record_activity, usage_today)
 
 
 def quota_exceeded_page(request, exc):
@@ -107,6 +108,8 @@ def home(request):
         'daily_limit': daily_limit,
         'next_session': _next_session(request.user),
         'chart': _activity_chart(request.user),
+        'xp': profile.xp,
+        'xp_level': profile.xp_level,
     })
 
 
@@ -182,6 +185,8 @@ def submit_response(request):
     q = get_object_or_404(Question, id=qid, user=request.user)
     record_activity(request.user)
     correct = (sel == q.correct_option)
+    if correct:
+        award_xp(request.user, 2)
     # ذخیره پاسخ
     UserResponse.objects.create(
         user=request.user,
@@ -261,6 +266,7 @@ def test_completed(request):
     ul.level_title = level_html
     ul.level_explanation = expl_html
     ul.save()
+    award_xp(request.user, 15)  # تکمیل آزمون تعیین سطح
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     return render(request, 'app/test_completed.html', {
         'level_title': level_html,
@@ -319,6 +325,29 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect("login")
+
+
+@login_required(login_url='login')
+def leaderboard_view(request):
+    """رتبه‌بندی امتیاز (XP) — انگیزه رقابت سالم."""
+    top_profiles = list(
+        UserProfile.objects.select_related('user').filter(xp__gt=0).order_by('-xp')[:20])
+    from .usage import current_streaks
+    streaks = current_streaks([p.user_id for p in top_profiles])
+    rows = [{
+        'rank': i + 1,
+        'profile': p,
+        'streak': streaks.get(p.user_id, 0),
+        'is_me': p.user_id == request.user.id,
+    } for i, p in enumerate(top_profiles)]
+
+    my_profile, _ = UserProfile.objects.get_or_create(user=request.user)
+    my_rank = UserProfile.objects.filter(xp__gt=my_profile.xp).count() + 1
+    return render(request, 'app/leaderboard.html', {
+        'rows': rows,
+        'my_profile': my_profile,
+        'my_rank': my_rank,
+    })
 
 
 @login_required(login_url='login')

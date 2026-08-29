@@ -5,7 +5,7 @@ import markdown
 import random
 import json
 from app.models import UserLevel
-from app.usage import QuotaExceeded, consume_ai_quota, record_activity
+from app.usage import QuotaExceeded, award_xp, consume_ai_quota, record_activity
 from app.views import quota_exceeded_page
 from qqz.models import StudyMaterial, QuizQuestion, QuizUserAnswer
 from EnglishWoman.services import chat_completion, extract_json
@@ -112,6 +112,7 @@ def Teach(request):
                 'content_html': html_content
             }
         )
+        award_xp(user, 5)  # ساخت درس‌نامه جدید
 
     return render(request, 'app/Teach.html', {
         'content': html_content,
@@ -314,6 +315,8 @@ def submit_quiz_answer(request):
             quiz_question=question,
             defaults={'selected_option': selected_option}
         )
+        if created and answer.is_correct:
+            award_xp(user, 2)
         # گزینه درست فقط «بعد از پاسخ» از سرور برمی‌گردد (نه داخل HTML صفحه)
         return JsonResponse({
             'success': True,

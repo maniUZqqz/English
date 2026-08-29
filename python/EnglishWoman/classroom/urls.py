@@ -11,6 +11,7 @@ urlpatterns = [
     path('<int:pk>/assignments/new/', views.add_assignment, name='add_assignment'),
     path('<int:pk>/remove/<int:student_id>/', views.remove_student, name='remove_student'),
     # برنامه هفتگی و جلسات
+    path('<int:pk>/live-url/', views.set_live_url, name='set_live_url'),
     path('<int:pk>/schedule/add/', views.add_schedule, name='add_schedule'),
     path('<int:pk>/schedule/<int:schedule_id>/delete/', views.delete_schedule, name='delete_schedule'),
     path('<int:pk>/sessions/new/', views.add_session, name='add_session'),

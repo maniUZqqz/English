@@ -35,11 +35,20 @@ class Classroom(models.Model):
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, related_name='teaching_classes')
     students = models.ManyToManyField(User, related_name='enrolled_classes', blank=True)
     join_code = models.CharField(max_length=8, unique=True, default=generate_join_code)
+    live_url = models.URLField(
+        blank=True,
+        help_text='لینک جلسه آنلاین (اسکای‌روم، گوگل‌میت…). خالی = اتاق خودکار Jitsi',
+    )
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         ordering = ['-created_at']
+
+    @property
+    def live_link(self):
+        """لینک کلاس زنده: سفارشی معلم یا اتاق خودکار Jitsi (رایگان، بدون ثبت‌نام)."""
+        return self.live_url or f'https://meet.jit.si/EnglishLady-{self.join_code}'
 
     def __str__(self):
         return f"{self.name} ({self.get_level_display()}) — {self.teacher.username}"
