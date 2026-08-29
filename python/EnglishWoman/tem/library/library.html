@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+
+{% block title %}کتابخانه من — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .book-card {
+        background: var(--surface);
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+        padding: 1.3rem;
+        height: 100%;
+        position: relative;
+        transition: transform 0.2s;
+    }
+
+    .book-card:hover { transform: translateY(-4px); }
+
+    .book-cover {
+        width: 52px; height: 68px;
+        border-radius: 8px;
+        background: linear-gradient(145deg, #d35400, #a04000);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .upload-zone {
+        border: 2px dashed var(--line);
+        border-radius: 15px;
+        padding: 1.6rem;
+        text-align: center;
+        background: var(--surface);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 940px;">
+    <h3 class="mb-1"><i class="fas fa-book-open ms-2" style="color:#d35400;"></i>کتابخانه من</h3>
+    <p class="text-secondary mb-4">کتاب PDF زبانت را آپلود کن — متنش استخراج می‌شود و معلم AI بخش‌به‌بخش درسش می‌دهد: خلاصه، لغات، گرامر، ترجمه و آزمون.</p>
+
+    <!-- آپلود -->
+    <div class="upload-zone mb-4">
+        <form method="post" enctype="multipart/form-data" class="d-flex gap-2 flex-wrap justify-content-center align-items-center" id="uploadForm">
+            {% csrf_token %}
+            <input type="text" name="title" class="form-control" style="max-width: 240px;" placeholder="نام کتاب (اختیاری)">
+            <input type="file" name="file" accept=".pdf" class="form-control" style="max-width: 280px;" required>
+            <button type="submit" class="btn btn-brand" id="uploadBtn">
+                <i class="fas fa-upload ms-2"></i>آپلود کتاب
+            </button>
+        </form>
+        <div class="small text-secondary mt-2">فقط PDF متنی (غیراسکن) · حداکثر {{ max_mb }} مگابایت</div>
+    </div>
+
+    <!-- لیست کتاب‌ها -->
+    <div class="row g-3">
+        {% for row in book_rows %}
+            <div class="col-md-6">
+                <div class="book-card">
+                    <div class="d-flex gap-3">
+                        <div class="book-cover"><i class="fas fa-book"></i></div>
+                        <div class="flex-grow-1">
+                            <h5 class="mb-1">
+                                <a href="{% url 'book_detail' row.book.pk %}" class="text-decoration-none stretched-link">{{ row.book.title }}</a>
+                            </h5>
+                            <div class="small text-secondary">{{ row.book.num_pages }} صفحه · {{ row.section_count }} بخش</div>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar bg-success" style="width: {% widthratio row.learned_count row.section_count 100 %}%;"></div>
+                            </div>
+                            <div class="small text-secondary mt-1">{{ row.learned_count }} از {{ row.section_count }} بخش یادگرفته‌شده</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-center text-secondary py-4">
+                <i class="fas fa-book fa-2x d-block mb-2"></i>
+                هنوز کتابی نداری — اولین PDF را آپلود کن!
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('uploadForm').addEventListener('submit', () => {
+        const btn = document.getElementById('uploadBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm ms-2"></span>در حال استخراج متن…';
+    });
+</script>
+{% endblock %}

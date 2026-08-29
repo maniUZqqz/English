@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'qqz',
     'tools',
     'classroom',
+    'library',
 ]
 
 MIDDLEWARE = [

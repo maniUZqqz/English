@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ book.title }} — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .section-row {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid var(--line);
+    }
+
+    .section-row:last-child { border-bottom: none; }
+
+    .section-num {
+        width: 38px; height: 38px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        background: var(--surface-2);
+        color: var(--text-soft);
+        flex-shrink: 0;
+        font-variant-numeric: tabular-nums;
+    }
+
+    .section-num.learned { background: rgba(46,139,87,0.15); color: #2e8b57; }
+
+    .excerpt { direction: ltr; text-align: left; color: var(--text-soft); font-size: 0.9rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 860px;">
+    <a href="{% url 'library' %}" class="text-decoration-none small">
+        <i class="fas fa-arrow-right ms-1"></i>کتابخانه
+    </a>
+
+    <div class="section-card mt-2">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+                <h4 class="mb-1"><i class="fas fa-book ms-2" style="color:#d35400;"></i>{{ book.title }}</h4>
+                <div class="text-secondary small">{{ book.num_pages }} صفحه · {{ sections|length }} بخش · {{ learned_count }} بخش یادگرفته‌شده</div>
+            </div>
+            <form method="post" action="{% url 'delete_book' book.pk %}"
+                  onsubmit="return confirm('کتاب و همه درس‌هایش حذف شود؟');">
+                {% csrf_token %}
+                <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash ms-1"></i>حذف کتاب</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="section-card">
+        <h6 class="fw-bold mb-2"><i class="fas fa-list ms-2 text-primary"></i>بخش‌های کتاب</h6>
+        {% for row in sections %}
+            <div class="section-row">
+                <span class="section-num {% if row.learned %}learned{% endif %}">
+                    {% if row.learned %}✓{% else %}{{ row.section.order }}{% endif %}
+                </span>
+                <div class="flex-grow-1 excerpt">{{ row.excerpt }}…</div>
+                <a href="{% url 'section_detail' row.section.pk %}" class="btn btn-sm {% if row.learned %}btn-outline-success{% else %}btn-brand{% endif %} flex-shrink-0">
+                    {% if row.learned %}مرور درس{% else %}یادگیری{% endif %}
+                </a>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

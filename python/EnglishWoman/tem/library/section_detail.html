@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}بخش {{ section.order }} — {{ book.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .passage-box {
+        background: var(--surface-2);
+        border-radius: 14px;
+        padding: 1.3rem 1.5rem;
+        direction: ltr;
+        text-align: left;
+        line-height: 2;
+        font-size: 1.05rem;
+        white-space: pre-wrap;
+    }
+
+    .lesson-content { line-height: 2; }
+    .lesson-content h2 { font-size: 1.25rem; margin-top: 1.4rem; color: var(--brand); }
+    .lesson-content table { width: 100%; border-collapse: collapse; margin: 0.8rem 0; }
+    .lesson-content th, .lesson-content td { border: 1px solid var(--line); padding: 6px 12px; }
+    .lesson-content th { background: var(--surface-2); }
+
+    .quiz-q { border: 1px solid var(--line); border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: 0.8rem; background: var(--surface-2); }
+    .quiz-opt { display: block; padding: 4px 0; cursor: pointer; direction: ltr; text-align: left; }
+    .quiz-opt.correct { color: #2e8b57; font-weight: 700; }
+    .quiz-opt.wrong { color: #e05d4d; }
+
+    .vocab-row { direction: ltr; text-align: left; border-bottom: 1px solid var(--line); padding: 6px 0; }
+    .vocab-row:last-child { border-bottom: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 860px;">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <a href="{% url 'book_detail' book.pk %}" class="text-decoration-none small">
+            <i class="fas fa-arrow-right ms-1"></i>{{ book.title }}
+        </a>
+        <div class="d-flex gap-2">
+            {% if prev_section %}
+                <a href="{% url 'section_detail' prev_section.pk %}" class="btn btn-sm btn-outline-secondary">بخش قبل</a>
+            {% endif %}
+            {% if next_section %}
+                <a href="{% url 'section_detail' next_section.pk %}" class="btn btn-sm btn-outline-secondary">بخش بعد</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="section-card mt-2">
+        <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+            <h5 class="mb-0"><i class="fas fa-file-lines ms-2" style="color:#d35400;"></i>بخش {{ section.order }}</h5>
+            <button class="btn btn-sm btn-outline-primary" onclick="speakPassage()" aria-label="پخش صوتی متن">
+                <i class="fas fa-volume-up ms-1"></i>بشنو
+            </button>
+        </div>
+        <div class="passage-box" id="passageText">{{ section.text }}</div>
+    </div>
+
+    <!-- درس معلم -->
+    <div class="section-card">
+        <h5 class="mb-3"><i class="fas fa-chalkboard-teacher ms-2 text-success"></i>درس این بخش</h5>
+        {% if lesson %}
+            <div class="lesson-content">{{ lesson.lesson_html|safe }}</div>
+        {% else %}
+            <p class="text-secondary">هنوز درسی ساخته نشده — معلم AI این بخش را برایت درس می‌دهد: خلاصه، لغات کلیدی، نکات گرامری و ترجمه.</p>
+            <form method="post" action="{% url 'teach_section' section.pk %}" id="teachForm">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-brand" id="teachBtn">
+                    <i class="fas fa-graduation-cap ms-2"></i>این بخش را درس بده
+                </button>
+            </form>
+        {% endif %}
+    </div>
+
+    <!-- لغات کلیدی -->
+    <div class="section-card">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="fw-bold mb-0"><i class="fas fa-bookmark ms-2 text-warning"></i>لغات کلیدی این بخش</h6>
+            <button class="btn btn-sm btn-outline-warning" id="vocabBtn" onclick="getVocab()">
+                استخراج و افزودن به دفتر لغات
+            </button>
+        </div>
+        <div id="vocabList" class="mt-2"></div>
+    </div>
+
+    <!-- آزمون درک مطلب -->
+    <div class="section-card">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6 class="fw-bold mb-0"><i class="fas fa-question-circle ms-2 text-danger"></i>آزمون درک مطلب</h6>
+            <button class="btn btn-sm btn-outline-danger" id="quizBtn" onclick="getQuiz()">ساخت آزمون</button>
+        </div>
+        <div id="quizArea" class="mt-3"></div>
+        <button class="btn btn-brand btn-sm" id="checkQuizBtn" onclick="checkQuiz()" hidden>بررسی پاسخ‌ها</button>
+        <div class="mt-2" id="quizResult"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // پخش صوتی متن بخش
+    function speakPassage() {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(document.getElementById('passageText').textContent);
+        u.lang = 'en-US';
+        u.rate = 0.92;
+        window.speechSynthesis.speak(u);
+    }
+
+    const teachForm = document.getElementById('teachForm');
+    if (teachForm) {
+        teachForm.addEventListener('submit', () => {
+            const btn = document.getElementById('teachBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm ms-2"></span>معلم در حال آماده‌کردن درس…';
+        });
+    }
+
+    // لغات کلیدی
+    async function getVocab() {
+        const btn = document.getElementById('vocabBtn');
+        btn.disabled = true;
+        btn.textContent = 'در حال استخراج…';
+        try {
+            const data = await apiPost("{% url 'api_section_vocab' section.pk %}", {});
+            const list = document.getElementById('vocabList');
+            list.innerHTML = '';
+            data.words.forEach(w => {
+                const div = document.createElement('div');
+                div.className = 'vocab-row';
+                div.innerHTML = `<strong></strong> — <span class="text-warning"></span><div class="small text-secondary"></div>`;
+                div.querySelector('strong').textContent = w.word;
+                div.querySelector('span').textContent = w.translation || '';
+                div.querySelector('.small').textContent = w.example || '';
+                list.appendChild(div);
+            });
+            btn.textContent = `✓ ${data.added} لغت جدید به دفتر لغات اضافه شد`;
+        } catch (e) {
+            alert(e.message || 'خطا در استخراج لغات.');
+            btn.disabled = false;
+            btn.textContent = 'استخراج و افزودن به دفتر لغات';
+        }
+    }
+
+    // آزمون درک مطلب
+    let quiz = null;
+    async function getQuiz() {
+        const btn = document.getElementById('quizBtn');
+        btn.disabled = true;
+        btn.textContent = 'در حال ساخت…';
+        try {
+            quiz = await apiPost("{% url 'api_section_quiz' section.pk %}", {});
+            const area = document.getElementById('quizArea');
+            area.innerHTML = '';
+            quiz.questions.forEach((q, qi) => {
+                const box = document.createElement('div');
+                box.className = 'quiz-q';
+                box.innerHTML = `<strong class="d-block mb-1" style="direction:ltr;text-align:left;">${qi + 1}. ${esc(q.question)}</strong>` +
+                    q.options.map((opt, oi) =>
+                        `<label class="quiz-opt"><input type="radio" name="bq_${qi}" value="${oi}"> ${esc(opt)}</label>`
+                    ).join('');
+                area.appendChild(box);
+            });
+            document.getElementById('checkQuizBtn').hidden = false;
+            document.getElementById('quizResult').innerHTML = '';
+        } catch (e) {
+            alert(e.message || 'خطا در ساخت آزمون.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'ساخت آزمون';
+        }
+    }
+
+    function checkQuiz() {
+        if (!quiz) return;
+        let correct = 0;
+        quiz.questions.forEach((q, qi) => {
+            const chosen = document.querySelector(`input[name="bq_${qi}"]:checked`);
+            document.querySelectorAll(`input[name="bq_${qi}"]`).forEach((input, oi) => {
+                const label = input.closest('label');
+                if (oi === q.answer) label.classList.add('correct');
+                else if (chosen && input === chosen) label.classList.add('wrong');
+            });
+            if (chosen && parseInt(chosen.value) === q.answer) correct++;
+        });
+        document.getElementById('quizResult').innerHTML =
+            `<span class="status-chip ${correct === quiz.questions.length ? 'chip-done' : 'chip-pending'}">نتیجه: ${correct} از ${quiz.questions.length}</span>`;
+    }
+
+    function esc(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}
