@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}تمرین نوشتاری — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .writing-wrap { max-width: 860px; margin: 2rem auto; }
+
+    #promptBox {
+        background: var(--surface-2);
+        border-inline-start: 4px solid #8e44ad;
+        border-radius: 12px;
+        padding: 1rem 1.2rem;
+        direction: ltr;
+        text-align: left;
+        min-height: 56px;
+    }
+
+    #essayText {
+        width: 100%;
+        border: 2px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        min-height: 220px;
+        outline: none;
+        resize: vertical;
+        background: var(--surface);
+        color: var(--text);
+        direction: ltr;
+        text-align: left;
+        line-height: 1.8;
+    }
+
+    #essayText:focus { border-color: #8e44ad; }
+
+    .score-circle {
+        width: 92px; height: 92px;
+        border-radius: 50%;
+        background: linear-gradient(145deg, #8e44ad, #6c3483);
+        color: white;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        font-weight: 800;
+        flex-shrink: 0;
+    }
+
+    .score-circle .num { font-size: 1.6rem; line-height: 1; }
+
+    .correction-item {
+        border-bottom: 1px solid var(--line);
+        padding: 0.6rem 0;
+        direction: ltr;
+        text-align: left;
+        font-size: 0.95rem;
+    }
+
+    .correction-item:last-child { border-bottom: none; }
+    .correction-item .orig { color: #e05d4d; text-decoration: line-through; }
+    .correction-item .fixed { color: #2e8b57; font-weight: 700; }
+    .correction-item .why { color: var(--text-soft); font-size: 0.85rem; }
+
+    .improved-box {
+        background: var(--surface-2);
+        border-radius: 12px;
+        padding: 1rem 1.2rem;
+        direction: ltr;
+        text-align: left;
+        line-height: 1.9;
+        white-space: pre-wrap;
+    }
+
+    #wordCount { font-variant-numeric: tabular-nums; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container writing-wrap">
+    <div class="section-card">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(145deg,#8e44ad,#6c3483);color:white;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">
+                <i class="fas fa-pen-nib"></i>
+            </div>
+            <div>
+                <h5 class="mb-0">تمرین نوشتاری (Writing)</h5>
+                <small class="text-secondary">بنویس — معلم AI با معیار آیلتس نمره می‌دهد و خط‌به‌خط اصلاح می‌کند</small>
+            </div>
+        </div>
+
+        <div class="d-flex gap-2 flex-wrap mb-2">
+            <button class="btn btn-outline-primary btn-sm" onclick="getPrompt('general')">
+                <i class="fas fa-lightbulb ms-1"></i>موضوع بده
+            </button>
+            <button class="btn btn-outline-danger btn-sm" onclick="getPrompt('ielts')">
+                <i class="fas fa-graduation-cap ms-1"></i>سوال آیلتس Task 2
+            </button>
+        </div>
+        <div id="promptBox" class="mb-3">Click a button above to get a topic, or just start writing about anything…</div>
+
+        <textarea id="essayText" placeholder="Write your essay in English..." oninput="updateCount()"></textarea>
+        <div class="d-flex justify-content-between align-items-center mt-2 flex-wrap gap-2">
+            <span class="small text-secondary"><span id="wordCount">0</span> کلمه</span>
+            <button class="btn btn-brand px-4" id="scoreBtn" onclick="scoreEssay()"
+                    style="background: linear-gradient(145deg, #8e44ad, #6c3483);">
+                <i class="fas fa-clipboard-check ms-2"></i>تصحیح و نمره
+            </button>
+        </div>
+    </div>
+
+    <!-- نتیجه -->
+    <div class="section-card" id="resultBox" hidden>
+        <div class="d-flex gap-3 align-items-center flex-wrap mb-3">
+            <div class="score-circle">
+                <span class="num" id="resScore">–</span>
+                <span style="font-size:0.7rem;">از ۱۰۰</span>
+            </div>
+            <div>
+                <div><span class="status-chip chip-info">باند آیلتس: <span class="en" id="resBand">–</span></span></div>
+                <p class="mb-0 mt-2 en" id="resFeedback" style="direction:ltr;text-align:left;"></p>
+            </div>
+        </div>
+        <h6 class="fw-bold"><i class="fas fa-highlighter ms-2 text-danger"></i>اصلاحات</h6>
+        <div id="resCorrections" class="mb-3"></div>
+        <h6 class="fw-bold"><i class="fas fa-wand-magic-sparkles ms-2 text-success"></i>نسخه بهبودیافته</h6>
+        <div class="improved-box" id="resImproved"></div>
+    </div>
+
+    <!-- تاریخچه -->
+    <div class="section-card">
+        <h6 class="fw-bold mb-3"><i class="fas fa-history ms-2 text-secondary"></i>نوشته‌های قبلی من</h6>
+        {% for w in history %}
+            <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom:1px solid var(--line);">
+                <span class="small text-secondary en" style="direction:ltr;">{{ w.text|truncatechars:60 }}</span>
+                <span>
+                    {% if w.band %}<span class="status-chip chip-info en">band {{ w.band }}</span>{% endif %}
+                    <span class="status-chip {% if w.score >= 60 %}chip-done{% else %}chip-pending{% endif %}">{{ w.score }}/۱۰۰</span>
+                </span>
+            </div>
+        {% empty %}
+            <div class="text-secondary small">هنوز نوشته‌ای ثبت نکرده‌ای — اولین متن را بنویس!</div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function updateCount() {
+        const text = document.getElementById('essayText').value.trim();
+        document.getElementById('wordCount').textContent = text ? text.split(/\s+/).length : 0;
+    }
+
+    async function getPrompt(style) {
+        const box = document.getElementById('promptBox');
+        box.textContent = 'در حال تولید موضوع…';
+        try {
+            const data = await apiPost("{% url 'api_writing_prompt' %}", { style });
+            box.textContent = data.prompt;
+        } catch (e) {
+            box.textContent = e.message || 'خطا در تولید موضوع.';
+        }
+    }
+
+    async function scoreEssay() {
+        const text = document.getElementById('essayText').value.trim();
+        if (!text) return;
+        const btn = document.getElementById('scoreBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm ms-2"></span>در حال تصحیح…';
+        try {
+            const data = await apiPost("{% url 'api_writing_score' %}", {
+                prompt: document.getElementById('promptBox').textContent,
+                text,
+            });
+            document.getElementById('resultBox').hidden = false;
+            document.getElementById('resScore').textContent = data.score;
+            document.getElementById('resBand').textContent = data.band || '—';
+            document.getElementById('resFeedback').textContent = data.feedback;
+            document.getElementById('resImproved').textContent = data.improved_version;
+            const corr = document.getElementById('resCorrections');
+            corr.innerHTML = '';
+            (data.corrections || []).forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'correction-item';
+                div.innerHTML =
+                    `<span class="orig"></span> ← <span class="fixed"></span><div class="why"></div>`;
+                div.querySelector('.orig').textContent = c.original || '';
+                div.querySelector('.fixed').textContent = c.corrected || '';
+                div.querySelector('.why').textContent = c.explanation || '';
+                corr.appendChild(div);
+            });
+            if (!(data.corrections || []).length) {
+                corr.innerHTML = '<div class="text-secondary small">اصلاح خاصی لازم نبود — عالی! 🎉</div>';
+            }
+            document.getElementById('resultBox').scrollIntoView({ behavior: 'smooth' });
+        } catch (e) {
+            alert(e.message || 'خطا در تصحیح متن.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-clipboard-check ms-2"></i>تصحیح و نمره';
+        }
+    }
+</script>
+{% endblock %}

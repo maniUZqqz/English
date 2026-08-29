@@ -322,6 +322,28 @@ def logout_view(request):
 
 
 @login_required(login_url='login')
+def skills_view(request):
+    """صفحه ۵ مهارت زبان — برای هر مهارت یک سیستم آموزش."""
+    from qqz.models import StudyMaterial, QuizUserAnswer
+    from tools.models import SavedWord, WritingSubmission
+    user = request.user
+    words = SavedWord.objects.filter(user=user)
+    writings = WritingSubmission.objects.filter(user=user)
+    last_writing = writings.first()
+    quiz_answers = QuizUserAnswer.objects.filter(user=user)
+    return render(request, 'app/skills.html', {
+        'lessons_count': StudyMaterial.objects.filter(user=user).count(),
+        'quiz_total': quiz_answers.count(),
+        'quiz_correct': quiz_answers.filter(is_correct=True).count(),
+        'words_count': words.count(),
+        'words_due': words.filter(next_review__lte=timezone.localdate()).count(),
+        'writings_count': writings.count(),
+        'last_band': last_writing.band if last_writing else None,
+        'last_writing_score': last_writing.score if last_writing else None,
+    })
+
+
+@login_required(login_url='login')
 def profile_view(request):
     """صفحه پروفایل: اطلاعات حساب، تغییر ایمیل و تغییر رمز عبور."""
     profile, _ = UserProfile.objects.get_or_create(user=request.user)

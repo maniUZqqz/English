@@ -41,6 +41,24 @@ class SavedWord(models.Model):
         return f"{self.user.username}: {self.word} (box {self.box})"
 
 
+class WritingSubmission(models.Model):
+    """تمرین نوشتاری — متن کاربر + تصحیح و نمره‌دهی AI (با معیار آیلتس)."""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='writings')
+    prompt = models.TextField()
+    text = models.TextField()
+    score = models.PositiveIntegerField(null=True, blank=True)   # 0 تا 100
+    band = models.CharField(max_length=10, blank=True)           # باند آیلتس مثل 6.5
+    feedback = models.TextField(blank=True)
+    improved_version = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.user.username} — {self.score}/100 (band {self.band})"
+
+
 class ChatMessage(models.Model):
     """حافظه‌ی گفتگوی چت‌بات — بین جلسات کاربر حفظ می‌شود."""
     ROLE_CHOICES = [('user', 'user'), ('assistant', 'assistant')]

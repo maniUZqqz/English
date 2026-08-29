@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}پنج مهارت — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .skill-card {
+        background: var(--surface);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 1.6rem;
+        height: 100%;
+        border-top: 4px solid var(--skill-color, var(--brand));
+    }
+
+    .skill-icon {
+        width: 52px; height: 52px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.4rem;
+        background: var(--skill-color, var(--brand));
+        margin-bottom: 0.8rem;
+    }
+
+    .skill-links { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; }
+
+    .skill-links a {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.6rem 0.9rem;
+        border-radius: 10px;
+        background: var(--surface-2);
+        text-decoration: none;
+        color: var(--text);
+        transition: background 0.2s;
+        font-size: 0.95rem;
+    }
+
+    .skill-links a:hover { background: var(--line); }
+
+    .skill-stat { font-size: 0.85rem; color: var(--text-soft); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h3 class="mb-1"><i class="fas fa-hand-paper ms-2 text-primary"></i>پنج مهارت زبان</h3>
+    <p class="text-secondary mb-4">برای هر مهارت یک سیستم آموزش کامل — از همین‌جا تمرین روزانه‌ات را بچین.</p>
+
+    <div class="row g-4">
+        <!-- ۱. گرامر -->
+        <div class="col-md-6 col-xl-4">
+            <div class="skill-card" style="--skill-color:#3498db;">
+                <div class="skill-icon"><i class="fas fa-spell-check"></i></div>
+                <h5 class="fw-bold">۱ · گرامر</h5>
+                <div class="skill-stat">{{ lessons_count }} درس‌نامه · {{ quiz_correct }}/{{ quiz_total }} پاسخ درست</div>
+                <div class="skill-links">
+                    <a href="{% url 'teach' %}"><span><i class="fas fa-chalkboard-teacher ms-2"></i>درس‌نامه سطح خودم</span><i class="fas fa-chevron-left"></i></a>
+                    <a href="{% url 'select_quiz' %}"><span><i class="fas fa-question-circle ms-2"></i>آزمون از درس‌ها</span><i class="fas fa-chevron-left"></i></a>
+                    <a href="{% url 'tool_grammar' %}"><span><i class="fas fa-check-circle ms-2"></i>چک گرامر متن</span><i class="fas fa-chevron-left"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ۲. لغت -->
+        <div class="col-md-6 col-xl-4">
+            <div class="skill-card" style="--skill-color:#e67e22;">
+                <div class="skill-icon"><i class="fas fa-book"></i></div>
+                <h5 class="fw-bold">۲ · لغت</h5>
+                <div class="skill-stat">{{ words_count }} لغت ذخیره‌شده{% if words_due %} · <strong style="color:#c96f1e;">{{ words_due }} منتظر مرور!</strong>{% endif %}</div>
+                <div class="skill-links">
+                    <a href="{% url 'tool_review' %}"><span><i class="fas fa-clone ms-2"></i>مرور لایتنر امروز</span><i class="fas fa-chevron-left"></i></a>
+                    <a href="{% url 'tool_dictionary' %}"><span><i class="fas fa-language ms-2"></i>دیکشنری هوشمند</span><i class="fas fa-chevron-left"></i></a>
+                    <a href="{% url 'tool_story' %}"><span><i class="fas fa-book-reader ms-2"></i>داستان با لغت‌هایم</span><i class="fas fa-chevron-left"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ۳. شنیداری -->
+        <div class="col-md-6 col-xl-4">
+            <div class="skill-card" style="--skill-color:#16a085;">
+                <div class="skill-icon"><i class="fas fa-headphones"></i></div>
+                <h5 class="fw-bold">۳ · شنیداری</h5>
+                <div class="skill-stat">گوش بده، بفهم، جواب بده</div>
+                <div class="skill-links">
+                    <a href="{% url 'tool_listening' %}"><span><i class="fas fa-headphones ms-2"></i>تمرین شنیداری + سوال</span><i class="fas fa-chevron-left"></i></a>
+                    <a href="{% url 'tool_story' %}"><span><i class="fas fa-volume-up ms-2"></i>داستان صوتی</span><i class="fas fa-chevron-left"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ۴. نوشتاری -->
+        <div class="col-md-6 col-xl-4">
+            <div class="skill-card" style="--skill-color:#8e44ad;">
+                <div class="skill-icon"><i class="fas fa-pen-nib"></i></div>
+                <h5 class="fw-bold">۴ · نوشتاری</h5>
+                <div class="skill-stat">
+                    {{ writings_count }} متن تصحیح‌شده
+                    {% if last_band %} · آخرین باند: <span class="en">{{ last_band }}</span>{% endif %}
+                </div>
+                <div class="skill-links">
+                    <a href="{% url 'tool_writing' %}"><span><i class="fas fa-pen ms-2"></i>بنویس و نمره آیلتس بگیر</span><i class="fas fa-chevron-left"></i></a>
+                    <a href="{% url 'tool_chat' %}"><span><i class="fas fa-comments ms-2"></i>چت نوشتاری با معلم</span><i class="fas fa-chevron-left"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- ۵. اسپیکینگ -->
+        <div class="col-md-6 col-xl-4">
+            <div class="skill-card" style="--skill-color:#e74c3c;">
+                <div class="skill-icon"><i class="fas fa-microphone"></i></div>
+                <h5 class="fw-bold">۵ · اسپیکینگ</h5>
+                <div class="skill-stat">حرف بزن، نمره تلفظ بگیر</div>
+                <div class="skill-links">
+                    <a href="{% url 'tool_pronunciation' %}"><span><i class="fas fa-wave-square ms-2"></i>تمرین تلفظ (نمره‌دار)</span><i class="fas fa-chevron-left"></i></a>
+                    <a href="{% url 'tool_voice' %}"><span><i class="fas fa-microphone ms-2"></i>مکالمه آزاد با معلم</span><i class="fas fa-chevron-left"></i></a>
+                </div>
+            </div>
+        </div>
+
+        <!-- تعیین سطح -->
+        <div class="col-md-6 col-xl-4">
+            <div class="skill-card" style="--skill-color:#2c3e50;">
+                <div class="skill-icon"><i class="fas fa-clipboard-check"></i></div>
+                <h5 class="fw-bold">پایه همه‌چیز: تعیین سطح</h5>
+                <div class="skill-stat">همه‌ی تمرین‌ها با سطح CEFR تو تنظیم می‌شوند</div>
+                <div class="skill-links">
+                    <a href="{% url 'level_determination' %}"><span><i class="fas fa-play ms-2"></i>آزمون تعیین سطح</span><i class="fas fa-chevron-left"></i></a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

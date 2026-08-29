@@ -118,6 +118,65 @@ class WordBankTests(TestCase):
         self.assertTrue(SavedWord.objects.filter(pk=other_word.pk).exists())
 
 
+class WritingTests(TestCase):
+    """سیستم نوشتاری: تولید موضوع و تصحیح با نمره آیلتس."""
+
+    def setUp(self):
+        self.user = User.objects.create_user('writer', password='pass12345')
+        self.client.login(username='writer', password='pass12345')
+
+    def _post(self, url_name, payload):
+        return self.client.post(
+            reverse(url_name), data=json.dumps(payload), content_type='application/json')
+
+    @patch('tools.views.chat_completion', return_value='{"prompt": "Describe your city."}')
+    def test_writing_prompt(self, _mock):
+        response = self._post('api_writing_prompt', {'style': 'general'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['prompt'], 'Describe your city.')
+
+    @patch('tools.views.chat_completion', return_value=json.dumps({
+        'score': 72, 'band': '6.0', 'feedback': 'Good effort.',
+        'corrections': [{'original': 'I goes', 'corrected': 'I go', 'explanation': 'verb'}],
+        'improved_version': 'My improved essay.',
+    }))
+    def test_writing_score_saves_history(self, _mock):
+        from .models import WritingSubmission
+        response = self._post('api_writing_score', {
+            'prompt': 'Describe your city.',
+            'text': 'My city is very beautiful and I love walking there every single day.',
+        })
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['score'], 72)
+        self.assertEqual(data['band'], '6.0')
+        submission = WritingSubmission.objects.get(user=self.user)
+        self.assertEqual(submission.score, 72)
+        # صفحه تاریخچه
+        page = self.client.get(reverse('tool_writing'))
+        self.assertContains(page, '6.0')
+
+    def test_too_short_essay_rejected(self):
+        response = self._post('api_writing_score', {'prompt': '', 'text': 'Too short.'})
+        self.assertEqual(response.status_code, 400)
+
+    @patch('tools.views.chat_completion', return_value='{"sentences": ["One.", "Two.", "Three."]}')
+    def test_pron_sentences(self, _mock):
+        response = self._post('api_pron_sentences', {'topic': 'food'})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()['sentences']), 3)
+
+
+class SkillsPageTests(TestCase):
+    def test_skills_page_renders(self):
+        User.objects.create_user('skiller', password='pass12345')
+        self.client.login(username='skiller', password='pass12345')
+        page = self.client.get(reverse('skills'))
+        self.assertEqual(page.status_code, 200)
+        for word in ('گرامر', 'لغت', 'شنیداری', 'نوشتاری', 'اسپیکینگ'):
+            self.assertContains(page, word)
+
+
 class LeitnerTests(TestCase):
     """مرور فاصله‌دار لایتنر روی دفتر لغات."""
 

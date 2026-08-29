@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}تمرین تلفظ — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .pron-wrap { max-width: 680px; margin: 2rem auto; }
+
+    .target-sentence {
+        background: var(--surface-2);
+        border-radius: 14px;
+        padding: 1.4rem;
+        font-size: 1.3rem;
+        line-height: 1.9;
+        direction: ltr;
+        text-align: left;
+        min-height: 90px;
+    }
+
+    .target-sentence .word-ok { color: #2e8b57; font-weight: 700; }
+    .target-sentence .word-bad { color: #e05d4d; font-weight: 700; text-decoration: underline wavy; }
+
+    .pron-controls {
+        display: flex;
+        justify-content: center;
+        gap: 1rem;
+        margin: 1.4rem 0;
+        flex-wrap: wrap;
+    }
+
+    .round-btn {
+        width: 64px; height: 64px;
+        border-radius: 50%;
+        border: none;
+        color: white;
+        font-size: 1.3rem;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .round-btn:hover:not(:disabled) { transform: scale(1.08); }
+    .round-btn:disabled { opacity: 0.4; }
+
+    .btn-listen { background: linear-gradient(145deg, #3498db, #2980b9); }
+    .btn-record { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+    .btn-record.recording { animation: pulse 1.2s infinite; }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.5); }
+        70% { box-shadow: 0 0 0 18px rgba(231, 76, 60, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+    }
+
+    .score-banner {
+        text-align: center;
+        border-radius: 12px;
+        padding: 0.9rem;
+        font-weight: 800;
+        font-size: 1.15rem;
+        display: none;
+    }
+
+    .score-banner.good { display: block; background: rgba(46,139,87,0.15); color: #2e8b57; }
+    .score-banner.mid { display: block; background: rgba(201,111,30,0.15); color: #c96f1e; }
+    .score-banner.bad { display: block; background: rgba(192,57,43,0.15); color: #e05d4d; }
+
+    .heard-box {
+        direction: ltr;
+        text-align: left;
+        color: var(--text-soft);
+        font-size: 0.95rem;
+        min-height: 24px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container pron-wrap">
+    <div class="section-card">
+        <div class="d-flex align-items-center gap-2 mb-3">
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(145deg,#16a085,#11866f);color:white;display:flex;align-items:center;justify-content:center;font-size:1.2rem;">
+                <i class="fas fa-wave-square"></i>
+            </div>
+            <div>
+                <h5 class="mb-0">تمرین تلفظ (Speaking)</h5>
+                <small class="text-secondary">جمله را بشنو، بلند بخوان — کلمه‌به‌کلمه نمره می‌گیری</small>
+            </div>
+        </div>
+
+        <form id="genForm" class="d-flex gap-2 flex-wrap mb-3">
+            <input type="text" id="topicInput" class="form-control flex-grow-1" style="max-width:340px;"
+                   placeholder="موضوع (اختیاری) — مثلاً: غذا، سفر">
+            <button type="submit" class="btn btn-brand" id="genBtn">
+                <i class="fas fa-wand-magic-sparkles ms-1"></i>جمله‌های جدید
+            </button>
+        </form>
+
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <span class="small text-secondary" id="progressText"></span>
+            <span class="small text-secondary" id="sessionScore"></span>
+        </div>
+
+        <div class="target-sentence" id="targetSentence">برای شروع، دکمه «جمله‌های جدید» را بزن 🎯</div>
+        <div class="heard-box mt-2" id="heardBox"></div>
+
+        <div class="pron-controls">
+            <button class="round-btn btn-listen" id="listenBtn" title="بشنو" disabled><i class="fas fa-volume-up"></i></button>
+            <button class="round-btn btn-record" id="recordBtn" title="بخوان" disabled><i class="fas fa-microphone"></i></button>
+            <button class="round-btn" id="nextBtn" title="جمله بعدی" style="background:linear-gradient(145deg,#5d6d7e,#46535f);" disabled><i class="fas fa-forward"></i></button>
+        </div>
+
+        <div class="score-banner" id="scoreBanner"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let sentences = [];
+    let index = 0;
+    let totalScore = 0;
+    let attempts = 0;
+
+    const targetEl = document.getElementById('targetSentence');
+    const listenBtn = document.getElementById('listenBtn');
+    const recordBtn = document.getElementById('recordBtn');
+    const nextBtn = document.getElementById('nextBtn');
+
+    let recognition = null;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SR();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+        recognition.maxAlternatives = 1;
+
+        recognition.onresult = (event) => {
+            const heard = event.results[0][0].transcript;
+            document.getElementById('heardBox').textContent = '🎤 ' + heard;
+            gradePronunciation(heard);
+        };
+        recognition.onend = () => recordBtn.classList.remove('recording');
+        recognition.onerror = () => {
+            recordBtn.classList.remove('recording');
+            document.getElementById('heardBox').textContent = 'صدایی تشخیص داده نشد — دوباره امتحان کن.';
+        };
+    }
+
+    document.getElementById('genForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('genBtn');
+        btn.disabled = true;
+        try {
+            const data = await apiPost("{% url 'api_pron_sentences' %}", {
+                topic: document.getElementById('topicInput').value.trim(),
+            });
+            sentences = data.sentences;
+            index = 0; totalScore = 0; attempts = 0;
+            showSentence();
+        } catch (err) {
+            alert(err.message || 'خطا در تولید جمله‌ها.');
+        } finally {
+            btn.disabled = false;
+        }
+    });
+
+    function showSentence() {
+        if (index >= sentences.length) {
+            const avg = attempts ? Math.round(totalScore / attempts) : 0;
+            targetEl.innerHTML = `تمرین تمام شد! میانگین تلفظ: <strong>${avg}٪</strong> 🎉`;
+            listenBtn.disabled = recordBtn.disabled = nextBtn.disabled = true;
+            document.getElementById('progressText').textContent = '';
+            return;
+        }
+        targetEl.textContent = sentences[index];
+        document.getElementById('heardBox').textContent = '';
+        document.getElementById('scoreBanner').className = 'score-banner';
+        document.getElementById('progressText').textContent = `جمله ${index + 1} از ${sentences.length}`;
+        listenBtn.disabled = false;
+        recordBtn.disabled = !recognition;
+        nextBtn.disabled = false;
+        if (!recognition) {
+            document.getElementById('heardBox').textContent =
+                'مرورگر شما از تشخیص گفتار پشتیبانی نمی‌کند (کروم را امتحان کن) — فقط می‌توانی گوش بدهی.';
+        }
+    }
+
+    listenBtn.addEventListener('click', () => {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(sentences[index]);
+        u.lang = 'en-US';
+        u.rate = 0.9;
+        window.speechSynthesis.speak(u);
+    });
+
+    recordBtn.addEventListener('click', () => {
+        if (!recognition) return;
+        recordBtn.classList.add('recording');
+        document.getElementById('heardBox').textContent = 'در حال شنیدن… جمله را بلند بخوان';
+        recognition.start();
+    });
+
+    nextBtn.addEventListener('click', () => { index++; showSentence(); });
+
+    function normalize(text) {
+        return text.toLowerCase().replace(/[^a-z0-9' ]/g, ' ').split(/\s+/).filter(Boolean);
+    }
+
+    // مقایسه کلمه‌به‌کلمه گفته‌ی کاربر با جمله هدف
+    function gradePronunciation(heard) {
+        const targetWords = normalize(sentences[index]);
+        const heardWords = new Set(normalize(heard));
+        let correct = 0;
+        const html = targetWords.map(w => {
+            const ok = heardWords.has(w);
+            if (ok) correct++;
+            return `<span class="${ok ? 'word-ok' : 'word-bad'}">${w}</span>`;
+        }).join(' ');
+        targetEl.innerHTML = html;
+
+        const percent = Math.round((correct / targetWords.length) * 100);
+        totalScore += percent;
+        attempts++;
+        const banner = document.getElementById('scoreBanner');
+        banner.textContent = percent >= 80 ? `عالی! ${percent}٪ 🎉`
+            : percent >= 50 ? `خوب بود — ${percent}٪ 💪 (کلمه‌های قرمز را دوباره تمرین کن)`
+            : `${percent}٪ — دوباره گوش بده و تکرار کن 📢`;
+        banner.className = 'score-banner ' + (percent >= 80 ? 'good' : percent >= 50 ? 'mid' : 'bad');
+        document.getElementById('sessionScore').textContent =
+            `میانگین: ${Math.round(totalScore / attempts)}٪`;
+    }
+</script>
+{% endblock %}

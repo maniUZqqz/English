@@ -19,7 +19,7 @@ from django.utils import timezone
 from app.models import UserLevel
 from app.usage import QuotaExceeded, consume_ai_quota, record_activity
 from EnglishWoman.services import AIDisabled, chat_completion, extract_json
-from .models import ChatMessage, SavedWord
+from .models import ChatMessage, SavedWord, WritingSubmission
 
 AI_NOT_CONFIGURED = 'هوش مصنوعی هنوز راه‌اندازی نشده است. مدیر باید کلید API را در پنل ادمین (AI Configuration) وارد کند.'
 
@@ -137,6 +137,140 @@ def api_review_word(request):
 @login_required(login_url='login')
 def listening_page(request):
     return render(request, 'tools/listening.html')
+
+
+@login_required(login_url='login')
+def writing_page(request):
+    """تمرین نوشتاری — با تاریخچه و روند نمره."""
+    history = WritingSubmission.objects.filter(user=request.user)[:10]
+    return render(request, 'tools/writing.html', {'history': history})
+
+
+@login_required(login_url='login')
+@require_POST
+def api_writing_prompt(request):
+    """تولید یک موضوع نوشتاری متناسب با سطح کاربر."""
+    quota_error = _check_quota(request.user)
+    if quota_error:
+        return quota_error
+    try:
+        data = json.loads(request.body or '{}')
+        style = str(data.get('style', 'general'))[:20]  # general یا ielts
+        system_prompt = 'You create writing tasks for English learners.' + _user_level_note(request.user)
+        if style == 'ielts':
+            user_prompt = (
+                'Give me ONE IELTS Writing Task 2 style question. '
+                'Return ONLY a JSON object: {"prompt": "..."}'
+            )
+        else:
+            user_prompt = (
+                'Give me ONE short, interesting writing prompt (1-2 sentences) '
+                'suitable for my level. Return ONLY a JSON object: {"prompt": "..."}'
+            )
+        reply = chat_completion([
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': user_prompt},
+        ], temperature=0.9)
+        parsed = extract_json(reply)
+        return JsonResponse({'prompt': str(parsed.get('prompt', '')).strip()})
+    except AIDisabled:
+        return JsonResponse({'error': AI_NOT_CONFIGURED}, status=503)
+    except Exception as e:
+        print('api_writing_prompt error:', e)
+        return JsonResponse({'error': 'Failed to create a prompt.'}, status=500)
+
+
+@login_required(login_url='login')
+@require_POST
+def api_writing_score(request):
+    """تصحیح و نمره‌دهی متن کاربر با معیار آیلتس + ذخیره در تاریخچه."""
+    quota_error = _check_quota(request.user)
+    if quota_error:
+        return quota_error
+    try:
+        data = json.loads(request.body or '{}')
+        prompt = str(data.get('prompt', '')).strip()[:1000]
+        text = str(data.get('text', '')).strip()[:8000]
+        if not text or len(text.split()) < 10:
+            return JsonResponse({'error': 'متن خیلی کوتاه است — حداقل ۱۰ کلمه بنویسید.'}, status=400)
+
+        system_prompt = (
+            'You are an experienced IELTS writing examiner. Assess the student essay fairly.'
+            + _user_level_note(request.user)
+        )
+        user_prompt = (
+            f'Writing task: {prompt or "Free writing"}\n\n'
+            f'Student essay:\n{text}\n\n'
+            'Assess it and return ONLY a JSON object with these keys:\n'
+            '{"score": 0-100, "band": "IELTS band like 6.5", '
+            '"feedback": "3-5 sentences of concrete feedback in simple English", '
+            '"corrections": [{"original": "...", "corrected": "...", "explanation": "short reason"}], '
+            '"improved_version": "the corrected full essay"}'
+        )
+        reply = chat_completion([
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': user_prompt},
+        ], temperature=0.3)
+        parsed = extract_json(reply)
+
+        submission = WritingSubmission.objects.create(
+            user=request.user,
+            prompt=prompt,
+            text=text,
+            score=min(int(parsed.get('score', 0) or 0), 100),
+            band=str(parsed.get('band', ''))[:10],
+            feedback=str(parsed.get('feedback', '')),
+            improved_version=str(parsed.get('improved_version', '')),
+        )
+        record_activity(request.user)
+        return JsonResponse({
+            'score': submission.score,
+            'band': submission.band,
+            'feedback': submission.feedback,
+            'corrections': parsed.get('corrections', [])[:20],
+            'improved_version': submission.improved_version,
+        })
+    except AIDisabled:
+        return JsonResponse({'error': AI_NOT_CONFIGURED}, status=503)
+    except Exception as e:
+        print('api_writing_score error:', e)
+        return JsonResponse({'error': 'Failed to score the essay.'}, status=500)
+
+
+@login_required(login_url='login')
+def pronunciation_page(request):
+    return render(request, 'tools/pronunciation.html')
+
+
+@login_required(login_url='login')
+@require_POST
+def api_pron_sentences(request):
+    """تولید ۵ جمله برای تمرین تلفظ متناسب با سطح."""
+    quota_error = _check_quota(request.user)
+    if quota_error:
+        return quota_error
+    try:
+        data = json.loads(request.body or '{}')
+        topic = str(data.get('topic', '')).strip()[:100] or 'everyday life'
+        system_prompt = 'You create pronunciation practice sentences.' + _user_level_note(request.user)
+        user_prompt = (
+            f"Give me 5 natural English sentences about '{topic}' for pronunciation practice, "
+            'each 6-12 words. Return ONLY a JSON object: {"sentences": ["...", "..."]}'
+        )
+        reply = chat_completion([
+            {'role': 'system', 'content': system_prompt},
+            {'role': 'user', 'content': user_prompt},
+        ], temperature=0.8)
+        parsed = extract_json(reply)
+        sentences = [str(s) for s in parsed.get('sentences', [])][:5]
+        if not sentences:
+            return JsonResponse({'error': 'No sentences from AI.'}, status=500)
+        return JsonResponse({'sentences': sentences})
+    except AIDisabled:
+        return JsonResponse({'error': AI_NOT_CONFIGURED}, status=503)
+    except Exception as e:
+        print('api_pron_sentences error:', e)
+        return JsonResponse({'error': 'Failed to create sentences.'}, status=500)
 
 
 @login_required(login_url='login')
