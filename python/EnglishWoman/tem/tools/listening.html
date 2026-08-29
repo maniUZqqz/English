@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+
+{% block title %}تمرین شنیداری — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .listen-wrap { max-width: 720px; margin: 2rem auto; }
+
+    .play-btn {
+        width: 84px; height: 84px;
+        border-radius: 50%;
+        border: none;
+        background: linear-gradient(145deg, #16a085, #11866f);
+        color: white;
+        font-size: 1.8rem;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .play-btn:hover { transform: scale(1.06); }
+    .play-btn:disabled { opacity: 0.4; }
+
+    .question-box {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 0.9rem;
+        background: var(--surface-2);
+    }
+
+    .listen-option { display: block; padding: 5px 0; cursor: pointer; direction: ltr; text-align: left; }
+    .listen-option.correct { color: #2e8b57; font-weight: 700; }
+    .listen-option.wrong { color: #e05d4d; }
+
+    .transcript {
+        background: var(--surface-2);
+        border-inline-start: 3px solid #16a085;
+        border-radius: 10px;
+        padding: 1rem 1.2rem;
+        direction: ltr;
+        text-align: left;
+        line-height: 1.8;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container listen-wrap">
+    <div class="section-card">
+        <h4 class="mb-1"><i class="fas fa-headphones ms-2" style="color:#16a085;"></i>تمرین شنیداری</h4>
+        <p class="text-secondary small mb-3">یک متن کوتاه انگلیسی پخش می‌شود — خوب گوش کن و به سوالات جواب بده. متن فقط بعد از پاسخ‌دادن نمایش داده می‌شود!</p>
+        <form id="genForm" class="d-flex gap-2 flex-wrap">
+            <input type="text" id="topicInput" class="form-control flex-grow-1" style="max-width: 380px;"
+                   placeholder="موضوع (اختیاری) — مثلاً: سفر، رستوران، ورزش">
+            <button type="submit" class="btn btn-brand" id="genBtn">
+                <i class="fas fa-wand-magic-sparkles ms-2"></i>ساخت تمرین
+            </button>
+        </form>
+    </div>
+
+    <div class="section-card text-center" id="playerBox" hidden>
+        <h6 class="text-secondary mb-3">🎧 گوش کن (می‌توانی چند بار پخش کنی)</h6>
+        <button class="play-btn" id="playBtn"><i class="fas fa-play"></i></button>
+        <div class="small text-secondary mt-2" id="playState">آماده پخش</div>
+    </div>
+
+    <div class="section-card" id="questionsBox" hidden>
+        <h5 class="mb-3"><i class="fas fa-question-circle ms-2 text-primary"></i>سوالات</h5>
+        <div id="questionsArea"></div>
+        <button class="btn btn-brand" id="checkBtn"><i class="fas fa-check ms-2"></i>بررسی پاسخ‌ها</button>
+        <div class="mt-3" id="resultText" hidden></div>
+    </div>
+
+    <div class="section-card" id="transcriptBox" hidden>
+        <h5 class="mb-2"><i class="fas fa-file-lines ms-2 text-secondary"></i>متن کامل</h5>
+        <div class="transcript" id="transcriptText"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let exercise = null;
+
+    document.getElementById('genForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = document.getElementById('genBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm ms-2"></span>در حال ساخت…';
+        try {
+            exercise = await apiPost("{% url 'api_listening' %}", {
+                topic: document.getElementById('topicInput').value.trim(),
+            });
+            renderExercise();
+        } catch (err) {
+            alert(err.message || 'خطا در ساخت تمرین.');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-wand-magic-sparkles ms-2"></i>ساخت تمرین';
+        }
+    });
+
+    function renderExercise() {
+        document.getElementById('playerBox').hidden = false;
+        document.getElementById('questionsBox').hidden = false;
+        document.getElementById('transcriptBox').hidden = true;
+        document.getElementById('resultText').hidden = true;
+        const area = document.getElementById('questionsArea');
+        area.innerHTML = '';
+        exercise.questions.forEach((q, qi) => {
+            const box = document.createElement('div');
+            box.className = 'question-box';
+            box.innerHTML = `<strong class="en d-block mb-2">${qi + 1}. ${escapeHtml(q.question)}</strong>` +
+                q.options.map((opt, oi) =>
+                    `<label class="listen-option"><input type="radio" name="lq_${qi}" value="${oi}"> ${escapeHtml(opt)}</label>`
+                ).join('');
+            area.appendChild(box);
+        });
+        window.speechSynthesis.cancel();
+    }
+
+    document.getElementById('playBtn').addEventListener('click', () => {
+        if (!exercise) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(exercise.passage);
+        u.lang = 'en-US';
+        u.rate = 0.92;
+        u.onstart = () => document.getElementById('playState').textContent = 'در حال پخش…';
+        u.onend = () => document.getElementById('playState').textContent = 'پایان — دوباره پخش کن یا جواب بده';
+        window.speechSynthesis.speak(u);
+    });
+
+    document.getElementById('checkBtn').addEventListener('click', () => {
+        if (!exercise) return;
+        let correct = 0;
+        exercise.questions.forEach((q, qi) => {
+            const chosen = document.querySelector(`input[name="lq_${qi}"]:checked`);
+            const labels = document.querySelectorAll(`input[name="lq_${qi}"]`);
+            labels.forEach((input, oi) => {
+                const label = input.closest('label');
+                if (oi === q.answer) label.classList.add('correct');
+                else if (chosen && input === chosen) label.classList.add('wrong');
+            });
+            if (chosen && parseInt(chosen.value) === q.answer) correct++;
+        });
+        const result = document.getElementById('resultText');
+        result.hidden = false;
+        result.innerHTML = `<span class="status-chip ${correct === exercise.questions.length ? 'chip-done' : 'chip-pending'}">
+            نتیجه: ${correct} از ${exercise.questions.length}</span>`;
+        document.getElementById('transcriptBox').hidden = false;
+        document.getElementById('transcriptText').textContent = exercise.passage;
+    });
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+</script>
+{% endblock %}

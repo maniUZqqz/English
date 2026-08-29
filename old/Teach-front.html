@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Grammar Lessons - Grammar Learner</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f0f2f5;
+        }
+
+        .navbar {
+            background: #2c3e50;
+            padding: 1rem;
+        }
+
+        .navbar-brand {
+            color: white !important;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.8) !important;
+            transition: color 0.3s;
+        }
+
+        .nav-link:hover {
+            color: white !important;
+        }
+
+        .lesson-container {
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 2rem;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .lesson-header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid #f0f2f5;
+        }
+
+        .lesson-title {
+            font-size: 2.5rem;
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+
+        .lesson-subtitle {
+            color: #5d6d7e;
+            font-size: 1.2rem;
+            line-height: 1.6;
+        }
+
+        .lesson-section {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-left: 5px solid #3498db;
+            transition: transform 0.3s;
+        }
+
+        .lesson-section:hover {
+            transform: translateX(5px);
+        }
+
+        .section-title {
+            color: #2c3e50;
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            font-weight: 600;
+        }
+
+        .section-text {
+            color: #34495e;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 1.5rem;
+        }
+
+        .example-box {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            margin: 1rem 0;
+        }
+
+        .example-title {
+            color: #3498db;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            font-size: 1.1rem;
+        }
+
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 3rem;
+            gap: 1rem;
+        }
+
+        .nav-button {
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .prev-button {
+            background: #edf2f7;
+            color: #4a5568;
+        }
+
+        .next-button {
+            background: linear-gradient(145deg, #3498db, #2980b9);
+            color: white;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #3498db, #2980b9);
+            width: 60%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .lesson-container {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+
+            .lesson-title {
+                font-size: 2rem;
+            }
+
+            .navigation {
+                flex-direction: column;
+            }
+
+            .nav-button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div>
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="../index.html">
+                <i class="fas fa-book-reader me-2"></i>Grammar Learner
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="login.html">
+                            <i class="fas fa-user me-1"></i>Login
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#">
+                            <i class="fas fa-cog me-1"></i>Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="lesson-container">
+        <div class="lesson-header">
+            <h1 class="lesson-title">Present Simple Tense</h1>
+            <p class="lesson-subtitle">Learn how to talk about habits, facts, and regular actions</p>
+            <div class="progress-bar">
+                <div class="progress-fill"></div>
+            </div>
+        </div>
+
+        <div class="lesson-content">
+            <div class="lesson-section">
+                <h2 class="section-title">
+                    <i class="fas fa-info-circle me-2"></i>What is Present Simple?
+                </h2>
+                <p class="section-text">
+                    The Present Simple tense is used to talk about regular actions, facts, habits, and general truths.
+                    It's one of the most commonly used tenses in English.
+                </p>
+            </div>
+
+            <div class="lesson-section">
+                <h2 class="section-title">
+                    <i class="fas fa-code me-2"></i>Structure
+                </h2>
+                <p class="section-text">
+                    For positive sentences, we use the base form of the verb for I/you/we/they and add -s or -es for
+                    he/she/it.
+                </p>
+                <div class="example-box">
+                    <div class="example-title">
+                        <i class="fas fa-lightbulb me-2"></i>Examples:
+                    </div>
+                    - I work every day.<br>
+                    - She works every day.<br>
+                    - They play tennis on weekends.<br>
+                    - He plays tennis on weekends.
+                </div>
+            </div>
+
+            <div class="lesson-section">
+                <h2 class="section-title">
+                    <i class="fas fa-list me-2"></i>Common Uses
+                </h2>
+                <p class="section-text">
+                    1. Daily routines and habits<br>
+                    2. General truths and facts<br>
+                    3. Permanent situations<br>
+                    4. Timetables and schedules
+                </p>
+                <div class="example-box">
+                    <div class="example-title">
+                        <i class="fas fa-lightbulb me-2"></i>Examples:
+                    </div>
+                    - The sun rises in the east. (fact)<br>
+                    - I usually drink coffee in the morning. (habit)<br>
+                    - The train leaves at 8:00 AM. (schedule)<br>
+                    - She lives in London. (permanent situation)
+                </div>
+            </div>
+        </div>
+
+        <div class="navigation">
+            <button class="nav-button prev-button">
+                <i class="fas fa-arrow-left"></i>Previous Lesson
+            </button>
+            <button class="nav-button next-button">
+                Next Lesson<i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</div>
+
+</body>
+</html>

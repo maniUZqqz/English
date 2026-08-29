@@ -1,0 +1,146 @@
+{% extends 'base.html' %}
+
+{% block title %}کارنامه {{ student.username }} — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .report-header {
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: white;
+        border-radius: 15px;
+        padding: 1.6rem 2rem;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+
+    .overall-score {
+        text-align: center;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 14px;
+        padding: 0.8rem 1.6rem;
+    }
+
+    .overall-score .val { font-size: 2rem; font-weight: 800; }
+
+    .mini-stat {
+        background: var(--surface-2);
+        border-radius: 12px;
+        padding: 0.8rem 1rem;
+        text-align: center;
+        height: 100%;
+    }
+
+    .mini-stat .val { font-size: 1.3rem; font-weight: 800; }
+    .mini-stat .lbl { font-size: 0.8rem; color: var(--text-soft); }
+
+    @media print {
+        .navbar, footer, .no-print { display: none !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 860px;">
+    <div class="d-flex justify-content-between align-items-center no-print">
+        <a href="{% url 'class_detail' classroom.pk %}" class="text-decoration-none small">
+            <i class="fas fa-arrow-right ms-1"></i>{{ classroom.name }}
+        </a>
+        <button onclick="window.print()" class="btn btn-sm btn-outline-secondary">
+            <i class="fas fa-print ms-1"></i>چاپ کارنامه
+        </button>
+    </div>
+
+    <div class="report-header mt-2">
+        <div>
+            <h4 class="mb-1"><i class="fas fa-file-alt ms-2"></i>کارنامه {{ student.username }}</h4>
+            <div class="small">کلاس: {{ classroom.name }} ({{ classroom.get_level_display }}) · معلم: {{ classroom.teacher.username }}</div>
+            <div class="small mt-1">سطح تعیین‌شده: <span class="en">{{ level }}</span> · استریک: {{ streak }} روز 🔥</div>
+        </div>
+        <div class="overall-score">
+            <div class="val">{% if overall is not None %}{{ overall }}{% else %}—{% endif %}</div>
+            <div class="small">نمره کل</div>
+        </div>
+    </div>
+
+    <!-- حضور و غیاب -->
+    <div class="section-card">
+        <h5 class="mb-3"><i class="fas fa-calendar-check ms-2 text-success"></i>حضور و غیاب</h5>
+        {% if total_sessions %}
+            <div class="row g-2 mb-2">
+                <div class="col-6 col-md"><div class="mini-stat"><div class="val">{{ total_sessions }}</div><div class="lbl">کل جلسات</div></div></div>
+                <div class="col-6 col-md"><div class="mini-stat"><div class="val" style="color:#2e8b57;">{{ att_counts.present }}</div><div class="lbl">حاضر</div></div></div>
+                <div class="col-6 col-md"><div class="mini-stat"><div class="val" style="color:#e05d4d;">{{ att_counts.absent }}</div><div class="lbl">غایب</div></div></div>
+                <div class="col-6 col-md"><div class="mini-stat"><div class="val" style="color:#c96f1e;">{{ att_counts.late }}</div><div class="lbl">تأخیر</div></div></div>
+                <div class="col-6 col-md"><div class="mini-stat"><div class="val" style="color:var(--brand);">{{ att_counts.excused }}</div><div class="lbl">موجه</div></div></div>
+            </div>
+            {% if attendance_percent is not None %}
+                <div class="d-flex align-items-center gap-2">
+                    <div class="progress flex-grow-1" style="height: 8px;">
+                        <div class="progress-bar bg-success" style="width: {{ attendance_percent }}%;"></div>
+                    </div>
+                    <span class="small fw-bold">{{ attendance_percent }}٪ حضور</span>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-secondary">هنوز جلسه‌ای ثبت نشده.</div>
+        {% endif %}
+    </div>
+
+    <!-- تکالیف -->
+    <div class="section-card">
+        <h5 class="mb-3"><i class="fas fa-tasks ms-2 text-primary"></i>تکالیف
+            {% if assignment_avg is not None %}<span class="status-chip chip-info me-2">میانگین: {{ assignment_avg }}/۱۰۰</span>{% endif %}
+        </h5>
+        <div style="overflow-x: auto;">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>تکلیف</th><th>وضعیت</th><th>نمره</th><th>بازخورد</th></tr></thead>
+                <tbody>
+                    {% for row in assignment_rows %}
+                        <tr>
+                            <td class="fw-bold">{{ row.assignment.title }}</td>
+                            <td>
+                                {% if row.submission %}<span class="status-chip chip-done">تحویل شد</span>
+                                {% else %}<span class="status-chip chip-late">تحویل نشده</span>{% endif %}
+                            </td>
+                            <td>{% if row.submission.grade is not None %}{{ row.submission.grade }}{% else %}—{% endif %}</td>
+                            <td class="small text-secondary">{{ row.submission.feedback|default:"—"|truncatechars:60 }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="4" class="text-secondary">تکلیفی وجود ندارد.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- آزمون‌ها -->
+    <div class="section-card">
+        <h5 class="mb-3"><i class="fas fa-file-signature ms-2 text-danger"></i>آزمون‌های کلاسی
+            {% if exam_avg is not None %}<span class="status-chip chip-info me-2">میانگین: {{ exam_avg }}/۱۰۰</span>{% endif %}
+        </h5>
+        <div style="overflow-x: auto;">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>آزمون</th><th>وضعیت</th><th>نمره</th></tr></thead>
+                <tbody>
+                    {% for row in exam_rows %}
+                        <tr>
+                            <td class="fw-bold">{{ row.exam.title }}</td>
+                            <td>
+                                {% if row.attempt %}<span class="status-chip chip-done">شرکت کرد</span>
+                                {% else %}<span class="status-chip chip-pending">شرکت نکرده</span>{% endif %}
+                            </td>
+                            <td>{% if row.attempt.score is not None %}{{ row.attempt.score }}{% else %}—{% endif %}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="3" class="text-secondary">آزمونی منتشر نشده.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

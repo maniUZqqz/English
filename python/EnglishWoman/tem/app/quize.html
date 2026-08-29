@@ -1,0 +1,266 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}آزمون تمرینی — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quiz-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        padding: 2rem;
+        background: var(--surface);
+        border-radius: 20px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .quiz-header {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding-bottom: 2rem;
+        border-bottom: 2px solid var(--line);
+    }
+
+    .quiz-title {
+        font-size: 2rem;
+        color: var(--text);
+        margin-bottom: 1rem;
+        font-weight: 700;
+    }
+
+    .quiz-subtitle { color: var(--text-soft); font-size: 1.2rem; line-height: 1.6; }
+
+    .progress-bar-track {
+        height: 8px;
+        background: var(--line);
+        border-radius: 4px;
+        margin: 2rem 0;
+        overflow: hidden;
+    }
+
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #3498db, #2980b9);
+        border-radius: 4px;
+        transition: width 0.3s ease;
+    }
+
+    .question {
+        font-size: 1.3rem;
+        color: var(--text);
+        margin-bottom: 2rem;
+        font-weight: 600;
+        padding: 1rem;
+        background: var(--surface-2);
+        border-radius: 12px;
+        border-left: 4px solid #3498db;
+        direction: ltr;
+        text-align: left;
+    }
+
+    .options { display: grid; gap: 1rem; margin-bottom: 2rem; }
+
+    .option {
+        padding: 1.2rem;
+        background: var(--surface-2);
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 1.1rem;
+        border: 2px solid transparent;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        direction: ltr;
+        text-align: left;
+    }
+
+    .option:hover { background: var(--line); transform: translateX(5px); }
+    .option.selected { background: #3498db; color: white; border-color: #2980b9; }
+    .option i { font-size: 1.2rem; opacity: 0.7; }
+    .option.selected i { opacity: 1; }
+
+    .correct { background-color: #28a745 !important; color: white !important; border-color: #218838 !important; }
+    .incorrect { background-color: #dc3545 !important; color: white !important; border-color: #c82333 !important; }
+
+    .navigation { display: flex; justify-content: space-between; gap: 1rem; margin-top: 2rem; }
+
+    .nav-button {
+        padding: 1rem 2rem;
+        border: none;
+        border-radius: 12px;
+        font-size: 1.1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .prev-button { background: var(--line); color: #4a5568; }
+    .next-button { background: linear-gradient(145deg, #3498db, #2980b9); color: white; }
+    .nav-button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+
+    .quiz-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 2rem;
+        padding: 1rem;
+        background: var(--surface-2);
+        border-radius: 12px;
+    }
+
+    .info-item { display: flex; align-items: center; gap: 0.5rem; color: var(--text-soft); }
+
+    @media (max-width: 768px) {
+        .quiz-container { margin: 1rem; padding: 1.5rem; }
+        .quiz-title { font-size: 1.8rem; }
+        .navigation { flex-direction: column; }
+        .nav-button { width: 100%; justify-content: center; }
+        .quiz-info { flex-direction: column; gap: 1rem; text-align: center; }
+    }
+
+    .hidden { display: none; }
+    .active { display: block; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="quiz-container">
+    {% if error %}
+        <div class="alert alert-warning text-center">
+            {{ error }}
+            <div class="mt-3">
+                <a href="{% url 'teach' %}" class="btn btn-brand">اول یک درس‌نامه بساز</a>
+            </div>
+        </div>
+    {% else %}
+        <div class="quiz-header">
+            <h1 class="quiz-title">آزمون تمرینی گرامر</h1>
+            <p class="quiz-subtitle"><span>موضوع: <span class="en">{{ study_material.topic|striptags }}</span></span></p>
+            <div class="progress-bar-track">
+                <div class="progress-fill" style="width: 0%;" id="progress-bar"></div>
+            </div>
+        </div>
+
+        <div class="quiz-info">
+            <div class="info-item">
+                <i class="fas fa-clock"></i>
+                <span id="timer">بدون محدودیت زمان</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-question-circle"></i>
+                <span id="question-count">سوال <span id="current-index">1</span> از {{ total_questions }}</span>
+            </div>
+        </div>
+
+        <div id="question-wrapper">
+            {% for q in quiz_questions %}
+                <div class="question-block {% if forloop.first %}active{% else %}hidden{% endif %}"
+                     data-question-id="{{ q.id }}" data-correct="{{ q.correct_option }}">
+                    <div class="question">
+                        <i class="fas fa-question-circle me-2"></i>
+                        {{ q.question_text }}
+                    </div>
+                    <div class="options">
+                        <div class="option" onclick="selectOption(this)" data-option="A">
+                            <i class="fas fa-circle"></i> {{ q.option_a }}
+                        </div>
+                        <div class="option" onclick="selectOption(this)" data-option="B">
+                            <i class="fas fa-circle"></i> {{ q.option_b }}
+                        </div>
+                        <div class="option" onclick="selectOption(this)" data-option="C">
+                            <i class="fas fa-circle"></i> {{ q.option_c }}
+                        </div>
+                        <div class="option" onclick="selectOption(this)" data-option="D">
+                            <i class="fas fa-circle"></i> {{ q.option_d }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="navigation mt-3">
+            <button class="nav-button prev-button" onclick="previousQuestion()">
+                <i class="fas fa-arrow-right"></i> قبلی
+            </button>
+            <button class="nav-button next-button" onclick="nextQuestion()">
+                بعدی <i class="fas fa-arrow-left"></i>
+            </button>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if not error %}
+<script>
+    let currentIndex = 0;
+    const totalQuestions = {{ total_questions }};
+    const questionBlocks = document.querySelectorAll('.question-block');
+
+    function showQuestion(index) {
+        questionBlocks.forEach((block, i) => {
+            block.classList.toggle('hidden', i !== index);
+            block.classList.toggle('active', i === index);
+        });
+        document.getElementById('current-index').innerText = index + 1;
+        document.getElementById('progress-bar').style.width = ((index + 1) / totalQuestions * 100) + '%';
+    }
+
+    function selectOption(el) {
+        const parent = el.closest('.question-block');
+        const correctOption = parent.dataset.correct;
+        const questionId = parent.dataset.questionId;
+        const selectedOption = el.dataset.option;
+
+        parent.querySelectorAll('.option').forEach(opt => {
+            opt.classList.remove('selected', 'correct', 'incorrect');
+        });
+        el.classList.add('selected');
+
+        fetch("{% url 'submit_quiz_answer' %}", {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            body: `question_id=${questionId}&selected_option=${selectedOption}`
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    if (data.is_correct) {
+                        el.classList.add('correct');
+                    } else {
+                        el.classList.add('incorrect');
+                        const correctEl = parent.querySelector(`.option[data-option="${correctOption}"]`);
+                        if (correctEl) correctEl.classList.add('correct');
+                    }
+                }
+            });
+    }
+
+    function nextQuestion() {
+        if (currentIndex < totalQuestions - 1) {
+            currentIndex++;
+            showQuestion(currentIndex);
+        } else {
+            window.location.href = "{% url 'home' %}";
+        }
+    }
+
+    function previousQuestion() {
+        if (currentIndex > 0) {
+            currentIndex--;
+            showQuestion(currentIndex);
+        }
+    }
+
+    showQuestion(currentIndex);
+</script>
+{% endif %}
+{% endblock %}
+
+

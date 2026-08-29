@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}تمرین مکالمه — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .voice-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        background: var(--surface);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        height: 72vh;
+    }
+
+    .voice-header {
+        padding: 1.2rem 1.5rem;
+        border-bottom: 2px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .voice-header .icon {
+        width: 44px; height: 44px; border-radius: 12px;
+        background: linear-gradient(145deg, #e74c3c, #c0392b);
+        color: white; display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    #voiceMessages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .voice-message {
+        max-width: 80%;
+        padding: 0.9rem 1.1rem;
+        border-radius: 16px;
+        line-height: 1.7;
+        display: flex;
+        gap: 0.6rem;
+        align-items: flex-start;
+        direction: ltr;
+        text-align: left;
+    }
+
+    .user-voice-message {
+        align-self: flex-start;
+        background: linear-gradient(145deg, #e74c3c, #c0392b);
+        color: white;
+    }
+
+    .assistant-voice-message {
+        align-self: flex-end;
+        background: var(--surface-2);
+        color: var(--text);
+    }
+
+    .voice-controls {
+        padding: 1.2rem 1.5rem;
+        border-top: 2px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 1rem;
+    }
+
+    .voice-btn {
+        width: 64px; height: 64px;
+        border-radius: 50%;
+        border: none;
+        color: white;
+        font-size: 1.4rem;
+        cursor: pointer;
+        transition: transform 0.2s;
+    }
+
+    .voice-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .voice-btn:not(:disabled):hover { transform: scale(1.08); }
+
+    #startVoiceButton { background: linear-gradient(145deg, #2ecc71, #27ae60); }
+    #startVoiceButton.active {
+        background: linear-gradient(145deg, #e74c3c, #c0392b);
+        animation: pulse 1.2s infinite;
+    }
+    #stopVoiceButton { background: linear-gradient(145deg, #e74c3c, #c0392b); }
+
+    @keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.5); }
+        70% { box-shadow: 0 0 0 18px rgba(231, 76, 60, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+    }
+
+    #statusText { color: var(--text-soft); min-width: 140px; text-align: center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="voice-container">
+        <div class="voice-header">
+            <div class="icon"><i class="fas fa-microphone"></i></div>
+            <div>
+                <h5 class="mb-0">تمرین مکالمه</h5>
+                <small class="text-secondary">انگلیسی صحبت کن — معلم هوشمند گوش می‌دهد و با صدا جواب می‌دهد 🎙️</small>
+            </div>
+        </div>
+        <div id="voiceMessages">
+            <div class="voice-message assistant-voice-message">
+                <div>🤖</div>
+                <span>Hello! Press the green microphone and start speaking in English. I'll answer with my voice! 🎙️</span>
+            </div>
+        </div>
+        <div class="voice-controls">
+            <button id="startVoiceButton" class="voice-btn" title="شروع ضبط"><i class="fas fa-microphone"></i></button>
+            <span id="statusText">آماده ضبط</span>
+            <button id="stopVoiceButton" class="voice-btn" disabled title="توقف ضبط"><i class="fas fa-stop"></i></button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const startVoiceButton = document.getElementById("startVoiceButton");
+    const stopVoiceButton = document.getElementById("stopVoiceButton");
+    const voiceMessagesDiv = document.getElementById("voiceMessages");
+    const statusText = document.getElementById("statusText");
+
+    let recognition;
+    let isListening = false;
+
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+        statusText.textContent = "مرورگر شما از تشخیص گفتار پشتیبانی نمی‌کند (کروم را امتحان کنید).";
+        startVoiceButton.disabled = true;
+    } else {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US'; // تمرین مکالمه انگلیسی
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 3;
+        recognition.continuous = true;
+
+        recognition.onstart = () => {
+            isListening = true;
+            startVoiceButton.disabled = true;
+            stopVoiceButton.disabled = false;
+            startVoiceButton.classList.add('active');
+            statusText.textContent = "در حال شنیدن…";
+        };
+
+        recognition.onresult = (event) => {
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    const transcript = event.results[i][0].transcript.trim();
+                    if (!transcript) continue;
+                    addVoiceMessage(transcript, 'user-voice-message', 'user');
+                    sendVoiceMessage(transcript);
+                }
+            }
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Speech recognition error:', event.error);
+            resetButtons();
+            if (event.error !== 'no-speech' && event.error !== 'aborted') {
+                statusText.textContent = "خطا در تشخیص گفتار — دوباره تلاش کنید.";
+            }
+        };
+
+        recognition.onend = resetButtons;
+    }
+
+    function resetButtons() {
+        isListening = false;
+        startVoiceButton.disabled = false;
+        stopVoiceButton.disabled = true;
+        startVoiceButton.classList.remove('active');
+        statusText.textContent = "آماده ضبط";
+    }
+
+    startVoiceButton.addEventListener("click", () => { if (!isListening) recognition.start(); });
+    stopVoiceButton.addEventListener("click", () => { if (isListening) recognition.stop(); });
+
+    async function sendVoiceMessage(text) {
+        try {
+            const data = await apiPost("{% url 'api_voice' %}", { message: text });
+            addVoiceMessage(data.reply, 'assistant-voice-message', 'assistant');
+            speakText(data.reply);
+        } catch (err) {
+            addVoiceMessage(err.message || "An error occurred. Please try again.", 'assistant-voice-message', 'assistant');
+        }
+    }
+
+    function addVoiceMessage(text, className, sender) {
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `voice-message ${className}`;
+
+        const avatarDiv = document.createElement("div");
+        avatarDiv.textContent = sender === 'user' ? '👤' : '🤖';
+
+        const textSpan = document.createElement("span");
+        textSpan.textContent = text;
+
+        msgDiv.appendChild(avatarDiv);
+        msgDiv.appendChild(textSpan);
+        voiceMessagesDiv.appendChild(msgDiv);
+        voiceMessagesDiv.scrollTop = voiceMessagesDiv.scrollHeight;
+    }
+
+    function speakText(text) {
+        if (!('speechSynthesis' in window)) return;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'en-US'; // پاسخ معلم انگلیسی است
+        window.speechSynthesis.speak(utterance);
+    }
+</script>
+{% endblock %}

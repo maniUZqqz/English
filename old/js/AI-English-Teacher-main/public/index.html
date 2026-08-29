@@ -1,0 +1,1223 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI English Teacher</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" integrity="sha512-Fo3rlrZj/k7ujTTXv6fH6s1DgH1bM9xTT4JZZLufHglVgM76CDsSCuwq0Qlg3vSPVHhQ+gVxk2HdO6uKZ8FJZQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        /* Reset */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #fff;
+            scroll-behavior: smooth;
+            transition: background-color 0.5s, color 0.5s;
+        }
+
+        body.dark-mode {
+            background-color: #121212;
+            color: #ffffff;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        /* هدر */
+        header {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            transition: background 0.3s, padding 0.3s;
+        }
+
+        header.scrolled {
+            background: #fff;
+            padding: 10px 0;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        header.dark-mode {
+            background: rgba(18, 18, 18, 0.9);
+            color: #ffffff;
+        }
+
+        header .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        header .logo a {
+            text-decoration: none;
+            font-size: 24px;
+            font-weight: 700;
+            color: #6a11cb;
+            transition: color 0.3s;
+        }
+
+        header .logo a:hover {
+            color: #2575fc;
+        }
+
+        /* دکمه تغییر حالت */
+        .theme-toggle {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 24px;
+            color: #6a11cb;
+            transition: transform 0.3s, color 0.3s;
+        }
+
+        .theme-toggle:hover {
+            transform: rotate(180deg);
+            color: #2575fc;
+        }
+
+        /* منوی ناوبری */
+        nav ul {
+            list-style: none;
+            display: flex;
+            gap: 25px;
+        }
+
+        nav ul li a {
+            text-decoration: none;
+            color: #333;
+            font-weight: 500;
+            transition: color 0.3s;
+            position: relative;
+        }
+
+        nav ul li a::after {
+            content: '';
+            display: block;
+            width: 0;
+            height: 2px;
+            background: #6a11cb;
+            transition: width 0.3s;
+            position: absolute;
+            bottom: -5px;
+            left: 0;
+        }
+
+        nav ul li a:hover::after,
+        nav ul li a.active::after {
+            width: 100%;
+        }
+
+        /* منوی آبشاری */
+        .dropdown {
+            position: relative;
+        }
+
+        .dropdown .dropbtn {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .dropdown .dropbtn i {
+            margin-left: 5px;
+            font-size: 12px;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            min-width: 160px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 8px;
+            right: 0;
+        }
+
+        .dropdown-content li {
+            width: 100%;
+        }
+
+        .dropdown-content li a {
+            color: #333;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            transition: background-color 0.3s;
+        }
+
+        .dropdown-content li a:hover {
+            background-color: #f1f1f1;
+        }
+
+        .dropdown.active .dropdown-content {
+            display: block;
+        }
+
+        .dropdown.active .dropbtn i {
+            transform: rotate(180deg);
+        }
+
+        /* منوی موبایل */
+        .menu-toggle {
+            display: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #333;
+        }
+
+        /* بخش هرو */
+        .hero {
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 100px 0 0 0;
+        }
+
+        .hero .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+        }
+
+        .hero-content {
+            flex: 1 1 500px;
+        }
+
+        .hero-content h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+
+        .hero-content p {
+            font-size: 20px;
+            margin-bottom: 30px;
+        }
+
+        .hero .btn {
+            padding: 12px 30px;
+            background: #ff758c;
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            text-decoration: none;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background 0.3s, transform 0.3s;
+            display: inline-block;
+        }
+
+        .hero .btn:hover {
+            background: #ff7eb3;
+            transform: translateY(-3px);
+        }
+
+        .hero-image {
+            flex: 1 1 400px;
+            text-align: center;
+            border-radius: 20px;
+        }
+
+        .pixverse {
+            border-radius: 30px;
+            width: 100%;
+            height: auto;
+        }
+
+        /* بخش ابزارها */
+        .features {
+            padding: 80px 0;
+            background: #f9f9f9;
+            text-align: center;
+        }
+
+        .features h2 {
+            font-size: 36px;
+            margin-bottom: 50px;
+            color: #333;
+            position: relative;
+        }
+
+        .features h2::after {
+            content: '';
+            width: 60px;
+            height: 4px;
+            background: #6a11cb;
+            display: block;
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        .feature-cards {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .card {
+            background: #fff;
+            padding: 30px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            flex: 1 1 30%;
+            transition: transform 0.3s, box-shadow 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        .card i {
+            color: #6a11cb;
+            margin-bottom: 20px;
+        }
+
+        .card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .card p {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: #555;
+            flex-grow: 1;
+        }
+
+        .card .btn {
+            padding: 10px 20px;
+            background: #6a11cb;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+
+        .card .btn:hover {
+            background: #2575fc;
+        }
+
+        /* بخش نظرات کاربران */
+        .testimonials {
+            padding: 80px 0;
+            background: #fff;
+            text-align: center;
+        }
+
+        .testimonials h2 {
+            font-size: 36px;
+            margin-bottom: 50px;
+            color: #333;
+            position: relative;
+        }
+
+        .testimonials h2::after {
+            content: '';
+            width: 60px;
+            height: 4px;
+            background: #6a11cb;
+            display: block;
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        .testimonial-slider {
+            width: 100%;
+            max-width: 800px;
+            margin: auto;
+            position: relative;
+        }
+
+        .testimonial {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .testimonial.active {
+            display: flex;
+        }
+
+        .testimonial p {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+
+        /* بخش قیمت‌گذاری */
+        .pricing {
+            padding: 80px 0;
+            background: #f9f9f9;
+            text-align: center;
+        }
+
+        .pricing h2 {
+            font-size: 36px;
+            margin-bottom: 50px;
+            color: #333;
+            position: relative;
+        }
+
+        .pricing h2::after {
+            content: '';
+            width: 60px;
+            height: 4px;
+            background: #6a11cb;
+            display: block;
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        .pricing-cards {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 30px;
+        }
+
+        .pricing-card {
+            background: #fff;
+            padding: 30px 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            flex: 1 1 30%;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .pricing-card.popular {
+            background: #6a11cb;
+            color: #fff;
+        }
+
+        .pricing-card.popular .btn-secondary {
+            background: #fff;
+            color: #6a11cb;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+
+        .pricing-card h3 {
+            font-size: 24px;
+            margin-bottom: 15px;
+            color: inherit;
+        }
+
+        .pricing-card .price {
+            font-size: 32px;
+            margin-bottom: 20px;
+            color: inherit;
+        }
+
+        .pricing-card .price span {
+            font-size: 18px;
+        }
+
+        .pricing-card ul {
+            list-style: none;
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        .pricing-card ul li {
+            margin-bottom: 10px;
+        }
+
+        .pricing-card .btn-secondary {
+            padding: 10px 20px;
+            background: #6a11cb;
+            color: #fff;
+            border: none;
+            border-radius: 25px;
+            text-decoration: none;
+            font-size: 14px;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        .pricing-card.popular .btn-secondary {
+            background: #fff;
+            color: #6a11cb;
+        }
+
+        .pricing-card .btn-secondary:hover {
+            background: #2575fc;
+            color: #fff;
+        }
+
+        /* بخش سوالات متداول */
+        .faq {
+            padding: 80px 0;
+            background: #fff;
+            text-align: center;
+        }
+
+        .faq h2 {
+            font-size: 36px;
+            margin-bottom: 50px;
+            color: #333;
+            position: relative;
+        }
+
+        .faq h2::after {
+            content: '';
+            width: 60px;
+            height: 4px;
+            background: #6a11cb;
+            display: block;
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        .faq-items {
+            max-width: 800px;
+            margin: auto;
+            text-align: left;
+        }
+
+        .faq-item {
+            margin-bottom: 20px;
+        }
+
+        .faq-item h3 {
+            font-size: 20px;
+            cursor: pointer;
+            position: relative;
+            padding-right: 30px;
+        }
+
+        .faq-item h3::after {
+            content: '\f0da';
+            font-family: 'Font Awesome 5 Free';
+            font-weight: 900;
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-size: 18px;
+            transition: transform 0.3s;
+        }
+
+        .faq-item.active h3::after {
+            transform: rotate(90deg);
+        }
+
+        .faq-item p {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            font-size: 16px;
+            color: #555;
+        }
+
+        .faq-item.active p {
+            max-height: 200px;
+            margin-top: 10px;
+        }
+
+        /* بخش درباره ما */
+        .about {
+            padding: 80px 0;
+            background: #f9f9f9;
+            text-align: center;
+        }
+
+        .about h2 {
+            font-size: 36px;
+            margin-bottom: 50px;
+            color: #333;
+            position: relative;
+        }
+
+        .about h2::after {
+            content: '';
+            width: 60px;
+            height: 4px;
+            background: #6a11cb;
+            display: block;
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        .about-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 40px;
+        }
+
+        .about-text {
+            flex: 1 1 500px;
+            text-align: left;
+        }
+
+        .about-text p {
+            font-size: 18px;
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.8;
+        }
+
+        .about-image {
+            flex: 1 1 400px;
+            text-align: center;
+        }
+
+        .about-us-photo {
+            border-radius: 50%;
+        }
+
+        .about-image img {
+            max-width: 100%;
+            height: auto;
+        }
+
+        /* بخش تماس با ما */
+        .contact {
+            padding: 80px 0;
+            background: #f9f9f9;
+            text-align: center;
+        }
+
+        .contact h2 {
+            font-size: 36px;
+            margin-bottom: 50px;
+            color: #333;
+            position: relative;
+        }
+
+        .contact h2::after {
+            content: '';
+            width: 60px;
+            height: 4px;
+            background: #6a11cb;
+            display: block;
+            margin: 10px auto 0;
+            border-radius: 2px;
+        }
+
+        .contact form {
+            max-width: 600px;
+            margin: auto;
+            text-align: left;
+            background: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #6a11cb;
+            box-shadow: 0 0 5px rgba(106, 17, 203, 0.5);
+        }
+
+        .contact .btn {
+            width: 100%;
+            padding: 12px;
+            background: #6a11cb;
+            color: #fff;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.3s;
+        }
+
+        .contact .btn:hover {
+            background: #2575fc;
+            transform: translateY(-3px);
+        }
+
+        /* فوتر */
+        footer {
+            background: #333;
+            color: #fff;
+            padding: 30px 0;
+        }
+
+        .footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .footer-content p {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .social-icons {
+            display: flex;
+            gap: 15px;
+        }
+
+        .social-icons a {
+            color: #fff;
+            font-size: 20px;
+            transition: color 0.3s, transform 0.3s;
+        }
+
+        .social-icons a:hover {
+            color: #6a11cb;
+            transform: scale(1.1);
+        }
+
+        /* دکمه بازگشت به بالا */
+        #back-to-top {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #6a11cb;
+            color: #fff;
+            border: none;
+            border-radius: 50%;
+            padding: 15px;
+            font-size: 18px;
+            cursor: pointer;
+            display: none;
+            z-index: 1000;
+            transition: background 0.3s, transform 0.3s;
+        }
+
+        #back-to-top:hover {
+            background: #2575fc;
+            transform: translateY(-5px);
+        }
+
+        /* واکنش‌گرایی */
+        @media (max-width: 1200px) {
+            .hero .container {
+                flex-direction: column-reverse;
+                text-align: center;
+            }
+
+            .hero-image {
+                margin-top: 30px;
+            }
+
+            .about-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .about-text {
+                text-align: center;
+            }
+        }
+
+        @media (max-width: 992px) {
+            nav ul {
+                flex-direction: column;
+                background: #fff;
+                position: absolute;
+                top: 70px;
+                right: 20px;
+                width: 200px;
+                display: none;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                border-radius: 8px;
+                z-index: 999;
+            }
+
+            nav ul.active {
+                display: flex;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            /* تغییرات منوی آبشاری در موبایل */
+            .dropdown-content {
+                position: static;
+                box-shadow: none;
+                border-radius: 0;
+            }
+
+            .dropdown:hover .dropdown-content {
+                display: none;
+            }
+
+            .dropdown .dropdown-content {
+                display: none;
+            }
+
+            .dropdown.active .dropdown-content {
+                display: flex;
+                flex-direction: column;
+            }
+
+            nav ul li.dropdown > a {
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            nav ul li.dropdown > a .fas.fa-chevron-down {
+                transform: rotate(0deg);
+                transition: transform 0.3s;
+            }
+
+            nav ul li.dropdown.active > a .fas.fa-chevron-down {
+                transform: rotate(180deg);
+            }
+
+            /* Hide dropdown-content initially */
+            .dropdown-content {
+                display: none;
+            }
+
+            .feature-cards,
+            .pricing-cards {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .card,
+            .pricing-card {
+                flex: 1 1 80%;
+            }
+
+            .hero .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+
+            .faq-items {
+                padding: 0 20px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .features h2,
+            .about h2,
+            .contact h2,
+            .pricing h2,
+            .testimonials h2,
+            .faq h2 {
+                font-size: 28px;
+            }
+
+            .hero-content h1 {
+                font-size: 32px;
+            }
+
+            .hero-content p {
+                font-size: 18px;
+            }
+
+            .card h3,
+            .pricing-card h3 {
+                font-size: 20px;
+            }
+
+            .card p,
+            .pricing-card p,
+            .faq-item p {
+                font-size: 14px;
+            }
+
+            .contact form {
+                padding: 20px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+<header id="header">
+    <div class="container">
+        <div class="logo">
+            <a href="#">AI English Teacher</a>
+        </div>
+        <nav>
+            <ul class="nav-menu">
+                <li><a href="#" class="active">Home</a></li>
+                <li class="dropdown">
+                    <a href="#" class="dropbtn">chat bots<i class="fas fa-chevron-down"></i></a>
+                    <ul class="dropdown-content">
+                        <li><a href="story.html"> story maker</a></li>
+                        <li><a href="voiceChat.html">voice assistant</a></li>
+                        <li><a href="grammer.html">grammer checker</a></li>
+                        <li><a href="dictionary.html"> smart dictionary</a></li>
+                        <li><a href="chat.html">chat bot</a></li>
+                    </ul>
+                </li>
+                <li><a href="#features">Tools</a></li>
+                <li><a href="#about">about us</a></li>
+                <li><a href="#pricing">pricing</a></li>
+                <li><a href="#faq">questions</a></li>
+                <li><a href="#contact">contact with us</a></li>
+            </ul>
+        </nav>
+        <button class="theme-toggle" id="theme-toggle">
+            <i class="fas fa-moon"></i>
+        </button>
+        <div class="menu-toggle">
+            <i class="fas fa-bars"></i>
+        </div>
+    </div>
+</header>
+
+<section class="hero">
+    <div class="container">
+        <div class="hero-content" data-aos="fade-right">
+            <h1>English language learning with AI</h1>
+            <p>Take your English language skills to a new level with our advanced chatbots.</p>
+            <a href="#contact" class="btn">Let's get started</a>
+        </div>
+        <div class="hero-image" data-aos="fade-left">
+            <video class="pixverse" src="video/AI-English-Robot-Teacher.mp4" autoplay loop muted playsinline></video>
+        </div>
+    </div>
+</section>
+
+<!-- بخش معرفی ابزارها -->
+<section id="features" class="features">
+    <div class="container">
+        <h2 data-aos="fade-up">Our tools</h2>
+        <div class="feature-cards">
+            <div class="card" data-aos="zoom-in" data-aos-delay="100">
+                <i class="fas fa-book-reader fa-3x"></i>
+                <h3>story creator</h3>
+                <p>Creating engaging stories to enhance your writing skills.</p>
+                <a href="story.html" class="btn btn-secondary">Learn more</a>
+            </div>
+            <div class="card" data-aos="zoom-in" data-aos-delay="200">
+                <i class="fas fa-microphone fa-3x"></i>
+                <h3>voice assistant</h3>
+                <p>Interactive audio conversations to improve listening and speaking skills.</p>
+                <a href="voiceChat.html" class="btn btn-secondary">Learn more</a>
+            </div>
+            <div class="card" data-aos="zoom-in" data-aos-delay="300">
+                <i class="fas fa-check-circle fa-3x"></i>
+                <h3>grammar checker</h3>
+                <p>Checking sentences for grammatical correctness in all living languages of the world.</p>
+                <a href="grammer.html" class="btn btn-secondary">Learn more</a>
+            </div>
+            <div class="card" data-aos="zoom-in" data-aos-delay="400">
+                <i class="fas fa-book fa-3x"></i>
+                <h3>smart dictionary</h3>
+                <p>The meaning of all words in all living languages of the world along with antonyms and synonyms.</p>
+                <a href="dictionary.html" class="btn btn-secondary">Learn more</a>
+            </div>
+            <div class="card" data-aos="zoom-in" data-aos-delay="500">
+                <i class="fas fa-comments fa-3x"></i>
+                <h3>chat bot</h3>
+                <p>With a focus on reading and writing skills.</p>
+                <a href="chat.html" class="btn btn-secondary">Learn more</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- بخش نظرات کاربران -->
+<section id="testimonials" class="testimonials">
+    <div class="container">
+        <h2 data-aos="fade-up">comments</h2>
+        <div class="testimonial-slider" data-aos="fade-up" data-aos-delay="100">
+            <div class="testimonial active">
+                <p>By using the voice chatbot, I was able to significantly improve my speaking skills. An amazing experience!</p>
+            </div>
+            <div class="testimonial">
+                <p>The online courses of this center provided me with the best learning resources. I highly recommend it.</p>
+            </div>
+            <div class="testimonial">
+                <p>The storytelling chatbot really helped enhance my creativity in writing. Thank you to your smart team.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- بخش قیمت‌گذاری -->
+<section id="pricing" class="pricing">
+    <div class="container">
+        <h2 data-aos="fade-up">pricing</h2>
+        <div class="pricing-cards">
+            <div class="pricing-card" data-aos="zoom-in" data-aos-delay="100">
+                <h3>basic program</h3>
+                <p class="price">49,000 <span>Toman</span></p>
+                <ul>
+                    <li>Access to voice chatbot</li>
+                    <li>Access to basic online courses</li>
+                    <li>Email support</li>
+                </ul>
+                <a href="#contact" class="btn btn-secondary">Buy</a>
+            </div>
+            <div class="pricing-card popular" data-aos="zoom-in" data-aos-delay="200">
+                <h3>professional program</h3>
+                <p class="price">99,000 <span>Toman</span></p>
+                <ul>
+                    <li>Access to the voice chatbot and story creator</li>
+                    <li>Access to all online courses</li>
+                    <li>24/7 support</li>
+                    <li>Individual counseling</li>
+                </ul>
+                <a href="#contact" class="btn btn-secondary">Buy</a>
+            </div>
+            <div class="pricing-card" data-aos="zoom-in" data-aos-delay="300">
+                <h3>Silver program</h3>
+                <p class="price">29,000 <span>Toman</span></p>
+                <ul>
+                    <li>Access to the voice chatbot</li>
+                    <li>Limited access to online courses</li>
+                    <li>Email support</li>
+                </ul>
+                <a href="#contact" class="btn btn-secondary">Buy</a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- بخش سوالات متداول -->
+<section id="faq" class="faq">
+    <div class="container">
+        <h2 data-aos="fade-up">Frequently Asked Questions</h2>
+        <div class="faq-items">
+            <div class="faq-item" data-aos="fade-up" data-aos-delay="100">
+                <h3>How can I participate in online courses?</h3>
+                <p>To participate in online courses, you just need to register and after paying the fee, you will have access to the course content.</p>
+            </div>
+            <div class="faq-item" data-aos="fade-up" data-aos-delay="200">
+                <h3>How does a voice chatbot work?</h3>
+                <p>The voice chatbot uses artificial intelligence to engage in interactive voice conversations with you to enhance your listening and speaking skills.</p>
+            </div>
+            <div class="faq-item" data-aos="fade-up" data-aos-delay="300">
+                <h3>Is 24/7 support provided?</h3>
+                <p>Depending on your chosen plan, 24/7 support is available via email and online chat.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- بخش درباره ما -->
+<section id="about" class="about">
+    <div class="container">
+        <h2 data-aos="fade-up">About Us</h2>
+        <div class="about-content">
+            <div class="about-text" data-aos="fade-right">
+                <p>We are a team of artificial intelligence and language education specialists whose goal is to provide you with the best educational tools. By using advanced technologies, we create a different and effective experience in learning English for you.</p>
+                <p>Focusing on your needs, we provide personalized educational programs and ongoing support so you can achieve your language goals in the best possible way.</p>
+            </div>
+            <div class="about-image" data-aos="fade-left">
+                <img src="IMG/robot.png" class="about-us-photo" alt="About AI English Teacher">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- بخش تماس با ما -->
+<section id="contact" class="contact">
+    <div class="container">
+        <h2 data-aos="fade-up">Contact us</h2>
+        <form id="contact-form" data-aos="fade-up" data-aos-delay="100">
+            <div class="form-group">
+                <label for="name">Your name</label>
+                <input type="text" id="name" name="name" placeholder="Enter your Name" required>
+            </div>
+            <div class="form-group">
+                <label for="email">Your Email</label>
+                <input type="email" id="email" name="email" placeholder="Enter your Email" required>
+            </div>
+            <div class="form-group">
+                <label for="message">Your message</label>
+                <textarea id="message" name="message" rows="5" placeholder="Write your message" required></textarea>
+            </div>
+            <button type="submit" class="btn">Send</button>
+        </form>
+    </div>
+</section>
+
+<footer>
+    <div class="container">
+        <div class="footer-content">
+            <p>&copy; 2025 AI English Teacher. All rights reserved.</p>
+            <div class="social-icons">
+                <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
+                <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                <a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- دکمه بازگشت به بالا -->
+<button id="back-to-top"><i class="fas fa-chevron-up"></i></button>
+
+<script src="script.js"></script>
+<script>
+    // منوی موبایل
+    const menuToggle = document.querySelector('.menu-toggle');
+    const navLinks = document.querySelector('nav ul');
+
+    menuToggle.addEventListener('click', () => {
+        navLinks.classList.toggle('active');
+        menuToggle.classList.toggle('active');
+    });
+
+    // بستن منو هنگام کلیک روی لینک‌ها در موبایل
+    const navItems = document.querySelectorAll('nav ul li a');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            if (navLinks.classList.contains('active')) {
+                navLinks.classList.remove('active');
+                menuToggle.classList.remove('active');
+            }
+        });
+    });
+
+    // تغییر هدر هنگام اسکرول
+    const header = document.getElementById('header');
+
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            header.classList.add('scrolled');
+        } else {
+            header.classList.remove('scrolled');
+        }
+
+        // نمایش دکمه بازگشت به بالا
+        const backToTop = document.getElementById('back-to-top');
+        if (window.scrollY > 300) {
+            backToTop.style.display = 'block';
+        } else {
+            backToTop.style.display = 'none';
+        }
+    });
+
+    // دکمه بازگشت به بالا
+    const backToTopButton = document.getElementById('back-to-top');
+
+    backToTopButton.addEventListener('click', () => {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+
+    // FAQ Accordion
+    const faqItems = document.querySelectorAll('.faq-item');
+
+    faqItems.forEach(item => {
+        item.addEventListener('click', () => {
+            faqItems.forEach(i => {
+                if (i !== item) {
+                    i.classList.remove('active');
+                }
+            });
+            item.classList.toggle('active');
+        });
+    });
+
+    // AOS Initialization
+    AOS.init({
+        duration: 800,
+        once: true,
+    });
+
+    // اسلایدر نظرات کاربران
+    let currentTestimonial = 0;
+    const testimonials = document.querySelectorAll('.testimonial');
+
+    function showTestimonial(index) {
+        testimonials.forEach((testimonial, i) => {
+            testimonial.classList.remove('active');
+            if (i === index) {
+                testimonial.classList.add('active');
+            }
+        });
+    }
+
+    function nextTestimonial() {
+        currentTestimonial = (currentTestimonial + 1) % testimonials.length;
+        showTestimonial(currentTestimonial);
+    }
+
+    // اتوماتیک اسلاید
+    setInterval(nextTestimonial, 5000);
+
+    // نمایش اولین نظر
+    showTestimonial(currentTestimonial);
+
+    // مدیریت منوی آبشاری در موبایل
+    const dropdown = document.querySelector('.dropdown');
+    const dropbtn = dropdown.querySelector('.dropbtn');
+    const dropdownContent = dropdown.querySelector('.dropdown-content');
+
+    dropbtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        dropdown.classList.toggle('active');
+    });
+
+    // تغییر حالت لایت مود و دارک مود
+    const themeToggle = document.getElementById('theme-toggle');
+    const body = document.body;
+
+    themeToggle.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        if (body.classList.contains('dark-mode')) {
+            themeToggle.innerHTML = '<i class="fas fa-sun"></i>';
+        } else {
+            themeToggle.innerHTML = '<i class="fas fa-moon"></i>';
+        }
+    });
+
+</script>
+</body>
+</html>

@@ -1,0 +1,300 @@
+{% extends 'base.html' %}
+
+{% block title %}داستان‌ساز — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chat-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        background: var(--surface);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        height: 72vh;
+    }
+
+    .chat-header {
+        padding: 1.2rem 1.5rem;
+        border-bottom: 2px solid var(--line);
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+    }
+
+    .chat-header .icon {
+        width: 44px; height: 44px; border-radius: 12px;
+        background: linear-gradient(145deg, #9b59b6, #8e44ad);
+        color: white; display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    #messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.8rem;
+    }
+
+    .message {
+        max-width: 85%;
+        padding: 0.9rem 1.1rem;
+        border-radius: 16px;
+        font-size: 1rem;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        direction: ltr;
+        text-align: left;
+    }
+
+    .user-message {
+        align-self: flex-start;
+        background: linear-gradient(145deg, #9b59b6, #8e44ad);
+        color: white;
+    }
+
+    .assistant-message {
+        align-self: flex-end;
+        background: var(--surface-2);
+        color: var(--text);
+    }
+
+    .highlight {
+        background: rgba(241, 196, 15, 0.3);
+        color: inherit;
+        font-weight: 800;
+        padding: 0 4px;
+        border-radius: 4px;
+    }
+
+    .chat-input {
+        display: flex;
+        gap: 0.6rem;
+        padding: 1rem 1.5rem;
+        border-top: 2px solid var(--line);
+    }
+
+    .chat-input input {
+        flex: 1;
+        border: 2px solid var(--line);
+        border-radius: 12px;
+        padding: 0.7rem 1rem;
+        outline: none;
+        background: var(--surface);
+        color: var(--text);
+        direction: ltr;
+        text-align: left;
+    }
+
+    .chat-input input:focus { border-color: #9b59b6; }
+
+    .controls-container {
+        display: flex;
+        align-items: center;
+        gap: 0.7rem;
+        margin-top: 0.7rem;
+        direction: ltr;
+    }
+
+    .speaker-button {
+        border: none;
+        background: #9b59b6;
+        color: white;
+        width: 36px; height: 36px;
+        border-radius: 50%;
+        cursor: pointer;
+        flex-shrink: 0;
+    }
+
+    .progress-container {
+        flex: 1;
+        height: 6px;
+        background: var(--line);
+        border-radius: 3px;
+        cursor: pointer;
+        overflow: hidden;
+    }
+
+    .progress-container .progress-bar {
+        height: 100%;
+        width: 0;
+        background: #9b59b6;
+        transition: width 0.3s;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="chat-container">
+        <div class="chat-header">
+            <div class="icon"><i class="fas fa-book-reader"></i></div>
+            <div>
+                <h5 class="mb-0">داستان‌ساز</h5>
+                <small class="text-secondary">چند کلمه یا یک موضوع بده — با داستان ساده حفظشان می‌کنی 📖</small>
+            </div>
+        </div>
+        <div id="messages">
+            <div class="message assistant-message">Give me a few words (e.g. cat, garden, rain) or a topic, and I'll create a simple story to help you memorize them! 📖</div>
+        </div>
+        <form id="storyForm" class="chat-input">
+            <input type="text" id="userInput" placeholder="cat, garden, rain..." autocomplete="off" value="{{ prefill_words }}">
+            <button type="submit" class="btn btn-brand px-4" style="background: linear-gradient(145deg, #9b59b6, #8e44ad);"><i class="fas fa-magic"></i></button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const storyForm = document.getElementById("storyForm");
+    const messagesDiv = document.getElementById("messages");
+
+    let userWords = [];
+    let messages = [];
+
+    storyForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const userInput = document.getElementById("userInput");
+        const userMessage = userInput.value.trim();
+        if (!userMessage) return;
+
+        userWords = userMessage.split(/[\s,]+/).map(w => w.trim()).filter(w => w.length > 0);
+
+        addMessage(userMessage, "user-message");
+        messages.push({ role: "user", content: userMessage });
+        userInput.value = "";
+
+        const typingIndicator = addMessage("در حال نوشتن داستان...", "assistant-message", true);
+        try {
+            const data = await apiPost("{% url 'api_story' %}", { messages });
+            typingIndicator.remove();
+            const highlightedStory = highlightUserWords(data.content, userWords);
+            addMessage(highlightedStory, "assistant-message", false, true);
+            messages.push({ role: "assistant", content: data.content });
+        } catch (err) {
+            typingIndicator.remove();
+            addMessage(err.message || "خطایی رخ داد. دوباره تلاش کنید.", "assistant-message");
+        }
+    });
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    function highlightUserWords(text, words) {
+        let safe = escapeHtml(text);
+        if (!words || words.length === 0) return safe;
+        words.sort((a, b) => b.length - a.length);
+        words.forEach(word => {
+            if (!word) return;
+            const escapedWord = word.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+            const regex = new RegExp(`\\b(${escapedWord})\\b`, 'gi');
+            safe = safe.replace(regex, '<span class="highlight">$1</span>');
+        });
+        return safe;
+    }
+
+    function addMessage(text, className, isTemporary = false, allowHTML = false) {
+        const msgDiv = document.createElement("div");
+        msgDiv.className = `message ${className}`;
+
+        const textSpan = document.createElement("span");
+        if (allowHTML) textSpan.innerHTML = text;
+        else textSpan.textContent = text;
+        msgDiv.appendChild(textSpan);
+
+        if (className === "assistant-message" && !isTemporary) {
+            addSpeechControls(msgDiv, textSpan);
+        }
+
+        messagesDiv.appendChild(msgDiv);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        return msgDiv;
+    }
+
+    // پخش صوتی داستان جمله‌به‌جمله با نوار پیشرفت (داستان انگلیسی است → en-US)
+    function addSpeechControls(msgDiv, textSpan) {
+        const controlsContainer = document.createElement("div");
+        controlsContainer.className = "controls-container";
+
+        const speakerButton = document.createElement("button");
+        speakerButton.className = "speaker-button";
+        speakerButton.innerHTML = '<i class="fas fa-volume-up"></i>';
+        speakerButton.title = "پخش داستان";
+        speakerButton.dataset.isSpeaking = "false";
+
+        const progressContainer = document.createElement("div");
+        progressContainer.className = "progress-container";
+        const progressBar = document.createElement("div");
+        progressBar.className = "progress-bar";
+        progressContainer.appendChild(progressBar);
+
+        let sentences = [];
+        let totalSentences = 0;
+        let currentSentenceIndex = 0;
+
+        function speakNextSentence() {
+            if (currentSentenceIndex >= totalSentences) {
+                speakerButton.dataset.isSpeaking = "false";
+                speakerButton.innerHTML = '<i class="fas fa-volume-up"></i>';
+                progressBar.style.width = "100%";
+                return;
+            }
+            const utterance = new SpeechSynthesisUtterance(sentences[currentSentenceIndex]);
+            utterance.lang = 'en-US';
+            utterance.onstart = () => {
+                progressBar.style.width = `${(currentSentenceIndex / totalSentences) * 100}%`;
+            };
+            utterance.onend = () => {
+                currentSentenceIndex++;
+                speakNextSentence();
+            };
+            window.speechSynthesis.speak(utterance);
+        }
+
+        speakerButton.addEventListener("click", () => {
+            if (speakerButton.dataset.isSpeaking === "true") {
+                window.speechSynthesis.cancel();
+                speakerButton.dataset.isSpeaking = "false";
+                speakerButton.innerHTML = '<i class="fas fa-volume-up"></i>';
+                progressBar.style.width = "0%";
+            } else {
+                sentences = textSpan.textContent.match(/[^.!?]+[.!?]+/g) || [textSpan.textContent];
+                totalSentences = sentences.length;
+                currentSentenceIndex = 0;
+                speakerButton.dataset.isSpeaking = "true";
+                speakerButton.innerHTML = '<i class="fas fa-stop"></i>';
+                speakNextSentence();
+            }
+        });
+
+        progressContainer.addEventListener("click", (e) => {
+            if (speakerButton.dataset.isSpeaking !== "true") return;
+            const rect = progressContainer.getBoundingClientRect();
+            const targetIndex = Math.floor(((e.clientX - rect.left) / rect.width) * totalSentences);
+            if (targetIndex < 0 || targetIndex >= totalSentences) return;
+            window.speechSynthesis.cancel();
+            currentSentenceIndex = targetIndex;
+            speakNextSentence();
+        });
+
+        controlsContainer.appendChild(speakerButton);
+        controlsContainer.appendChild(progressContainer);
+        msgDiv.appendChild(controlsContainer);
+    }
+
+    // اگر از دفتر لغات با کلمات از پیش پر شده آمده باشد، فرم را خودکار ارسال کن
+    document.addEventListener("DOMContentLoaded", () => {
+        const input = document.getElementById("userInput");
+        if (input.value.trim()) {
+            storyForm.dispatchEvent(new Event("submit"));
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+
+{% block title %}حضور و غیاب {{ session.date|date:"Y/m/d" }} — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .att-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid var(--line);
+        flex-wrap: wrap;
+    }
+
+    .att-row:last-child { border-bottom: none; }
+
+    .att-options { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+
+    .att-options input[type="radio"] { display: none; }
+
+    .att-options label {
+        padding: 4px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        cursor: pointer;
+        font-size: 0.85rem;
+        transition: all 0.2s;
+        background: var(--surface-2);
+    }
+
+    .att-options input[value="present"]:checked + label { background: rgba(46,139,87,0.2); color: #2e8b57; border-color: #2e8b57; }
+    .att-options input[value="absent"]:checked + label { background: rgba(192,57,43,0.2); color: #e05d4d; border-color: #e05d4d; }
+    .att-options input[value="late"]:checked + label { background: rgba(201,111,30,0.2); color: #c96f1e; border-color: #c96f1e; }
+    .att-options input[value="excused"]:checked + label { background: rgba(52,152,219,0.2); color: var(--brand); border-color: var(--brand); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 720px;">
+    <a href="{% url 'class_detail' classroom.pk %}" class="text-decoration-none small">
+        <i class="fas fa-arrow-right ms-1"></i>{{ classroom.name }}
+    </a>
+
+    <div class="section-card mt-2">
+        <h4 class="mb-1"><i class="fas fa-calendar-check ms-2 text-success"></i>حضور و غیاب — {{ session.date|date:"Y/m/d" }}</h4>
+        {% if session.topic %}<div class="text-secondary mb-3">موضوع جلسه: {{ session.topic }}</div>{% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {% for row in rows %}
+                <div class="att-row">
+                    <strong><i class="fas fa-user ms-2 text-secondary"></i>{{ row.student.username }}</strong>
+                    <div class="att-options">
+                        {% for value, label in status_choices %}
+                            <span>
+                                <input type="radio" name="status_{{ row.student.id }}" value="{{ value }}"
+                                       id="s{{ row.student.id }}_{{ value }}"
+                                       {% if row.status == value %}checked{% endif %}>
+                                <label for="s{{ row.student.id }}_{{ value }}">{{ label }}</label>
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% empty %}
+                <div class="text-secondary">این کلاس هنوز زبان‌آموزی ندارد.</div>
+            {% endfor %}
+            {% if rows %}
+                <button type="submit" class="btn btn-brand mt-3"><i class="fas fa-save ms-2"></i>ذخیره حضور و غیاب</button>
+            {% endif %}
+        </form>
+    </div>
+</div>
+{% endblock %}

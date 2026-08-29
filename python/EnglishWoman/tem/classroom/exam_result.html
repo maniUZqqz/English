@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}نتیجه آزمون: {{ exam.title }} — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .score-hero {
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: white;
+        border-radius: 15px;
+        padding: 2rem;
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .score-value { font-size: 3rem; font-weight: 800; }
+
+    .question-box {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem 1.2rem;
+        margin-bottom: 0.9rem;
+        background: var(--surface-2);
+    }
+
+    .option-line { padding: 3px 0; }
+    .option-line.correct { color: #2e8b57; font-weight: 700; }
+    .option-line.wrong { color: #e05d4d; text-decoration: line-through; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 760px;">
+    <a href="{% url 'class_detail' classroom.pk %}" class="text-decoration-none small">
+        <i class="fas fa-arrow-right ms-1"></i>{{ classroom.name }}
+    </a>
+
+    <div class="score-hero mt-2">
+        <div class="mb-1">{{ exam.title }}</div>
+        <div class="score-value">{{ attempt.score }}<small style="font-size:1.2rem;">/۱۰۰</small></div>
+        <div>{% if attempt.score >= 80 %}عالی! 🎉{% elif attempt.score >= 50 %}خوب بود — ادامه بده 💪{% else %}تمرین بیشتری لازم داری 📚{% endif %}</div>
+    </div>
+
+    <div class="section-card">
+        <h5 class="mb-3"><i class="fas fa-list-check ms-2 text-primary"></i>مرور پاسخ‌ها</h5>
+        {% for row in rows %}
+            <div class="question-box">
+                <strong class="en d-block mb-2">{{ forloop.counter }}. {{ row.question.text }}</strong>
+                <div class="en">
+                    <div class="option-line {% if row.question.correct_option == 'A' %}correct{% elif row.answer.selected == 'A' %}wrong{% endif %}">
+                        A) {{ row.question.option_a }}{% if row.answer.selected == 'A' %} ⬅{% endif %}
+                    </div>
+                    <div class="option-line {% if row.question.correct_option == 'B' %}correct{% elif row.answer.selected == 'B' %}wrong{% endif %}">
+                        B) {{ row.question.option_b }}{% if row.answer.selected == 'B' %} ⬅{% endif %}
+                    </div>
+                    <div class="option-line {% if row.question.correct_option == 'C' %}correct{% elif row.answer.selected == 'C' %}wrong{% endif %}">
+                        C) {{ row.question.option_c }}{% if row.answer.selected == 'C' %} ⬅{% endif %}
+                    </div>
+                    <div class="option-line {% if row.question.correct_option == 'D' %}correct{% elif row.answer.selected == 'D' %}wrong{% endif %}">
+                        D) {{ row.question.option_d }}{% if row.answer.selected == 'D' %} ⬅{% endif %}
+                    </div>
+                </div>
+                <div class="small mt-2">
+                    {% if row.answer.is_correct %}
+                        <span class="status-chip chip-done">درست ✓</span>
+                    {% elif not row.answer.selected %}
+                        <span class="status-chip chip-pending">بدون پاسخ</span>
+                    {% else %}
+                        <span class="status-chip chip-late">نادرست ✗</span>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

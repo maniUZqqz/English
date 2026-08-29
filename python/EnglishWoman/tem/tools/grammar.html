@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}چک گرامر — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .grammar-container {
+        max-width: 800px;
+        margin: 2rem auto;
+        background: var(--surface);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        padding: 2rem;
+    }
+
+    .grammar-header {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .grammar-header .icon {
+        width: 44px; height: 44px; border-radius: 12px;
+        background: linear-gradient(145deg, #2ecc71, #27ae60);
+        color: white; display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    #inputText {
+        width: 100%;
+        border: 2px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        min-height: 120px;
+        outline: none;
+        resize: vertical;
+        background: var(--surface);
+        color: var(--text);
+        direction: ltr;
+        text-align: left;
+    }
+
+    #inputText:focus { border-color: #2ecc71; }
+
+    #messages { margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem; }
+
+    .message {
+        padding: 1rem 1.2rem;
+        border-radius: 14px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        direction: ltr;
+        text-align: left;
+    }
+
+    .user-message {
+        background: var(--surface-2);
+        border-inline-end: 4px solid var(--brand);
+        color: var(--text);
+    }
+
+    .assistant-message {
+        background: var(--surface-2);
+        border-inline-end: 4px solid #2ecc71;
+        color: var(--text);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="grammar-container">
+        <div class="grammar-header">
+            <div class="icon"><i class="fas fa-check-circle"></i></div>
+            <div>
+                <h5 class="mb-0">چک گرامر</h5>
+                <small class="text-secondary">جمله یا متن انگلیسی را بنویس — اصلاح‌شده + توضیح خطاها را بگیر</small>
+            </div>
+        </div>
+        <form id="grammarForm">
+            <textarea id="inputText" placeholder="Write or paste your English text here..."></textarea>
+            <button type="submit" class="btn btn-brand mt-3 px-4" style="background: linear-gradient(145deg, #2ecc71, #27ae60);">
+                <i class="fas fa-spell-check ms-2"></i>بررسی گرامر
+            </button>
+        </form>
+        <div id="messages"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.getElementById('grammarForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const inputEl = document.getElementById('inputText');
+        const inputText = inputEl.value.trim();
+        if (!inputText) return;
+
+        addMessage(inputText, 'user-message');
+        inputEl.value = '';
+        const pending = addMessage('در حال بررسی...', 'assistant-message');
+
+        try {
+            const data = await apiPost("{% url 'api_grammar' %}", { text: inputText });
+            pending.textContent = data.result;
+        } catch (error) {
+            pending.textContent = error.message || 'خطایی در بررسی گرامر رخ داد. دوباره تلاش کنید.';
+        }
+    });
+
+    function addMessage(text, className) {
+        const messagesDiv = document.getElementById('messages');
+        const messageDiv = document.createElement('div');
+        messageDiv.classList.add('message', className);
+        messageDiv.textContent = text;
+        messagesDiv.appendChild(messageDiv);
+        messageDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        return messageDiv;
+    }
+</script>
+{% endblock %}

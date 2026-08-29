@@ -1,0 +1,674 @@
+<!--<!DOCTYPE html>-->
+<!--<html lang="en">-->
+<!--<head>-->
+<!--    <meta charset="UTF-8">-->
+<!--    <title>AI Dictionary & Translator</title>-->
+<!--    <link rel="stylesheet" href="dictionary.css" />-->
+<!--    <style>-->
+<!--        /* کل طراحی */-->
+<!--        body {-->
+<!--            margin: 0;-->
+<!--            padding: 0;-->
+<!--            font-family: 'Roboto', sans-serif;-->
+<!--            background: linear-gradient(45deg, #f5f5f5, #c1d3f1);-->
+<!--        }-->
+
+<!--        .container {-->
+<!--            width: 100%;-->
+<!--            max-width: 900px;-->
+<!--            margin: 40px auto;-->
+<!--            background: #fff;-->
+<!--            border-radius: 10px;-->
+<!--            padding: 30px;-->
+<!--            box-shadow: 0 10px 30px rgba(0,0,0,0.1);-->
+<!--            text-align: center;-->
+<!--            animation: fadeIn 1s ease-in-out;-->
+<!--        }-->
+
+<!--        h1 {-->
+<!--            font-size: 2.5rem;-->
+<!--            color: #333;-->
+<!--            margin-bottom: 20px;-->
+<!--        }-->
+
+<!--        .translate-box {-->
+<!--            display: flex;-->
+<!--            justify-content: space-between;-->
+<!--            align-items: center;-->
+<!--            gap: 20px;-->
+<!--            margin-bottom: 20px;-->
+<!--        }-->
+
+<!--        .box {-->
+<!--            flex: 1;-->
+<!--            display: flex;-->
+<!--            flex-direction: column;-->
+<!--            gap: 10px;-->
+<!--        }-->
+
+<!--        .box select,-->
+<!--        .box textarea {-->
+<!--            width: 100%;-->
+<!--            padding: 15px;-->
+<!--            border-radius: 8px;-->
+<!--            border: 1px solid #ccc;-->
+<!--            font-size: 1rem;-->
+<!--            background-color: #f9f9f9;-->
+<!--            transition: 0.3s ease-in-out;-->
+<!--        }-->
+
+<!--        .box select:focus,-->
+<!--        .box textarea:focus {-->
+<!--            outline: none;-->
+<!--            border-color: #4a63ee;-->
+<!--            background-color: #fff;-->
+<!--        }-->
+
+<!--        .btn-group {-->
+<!--            display: flex;-->
+<!--            gap: 10px;-->
+<!--            justify-content: center;-->
+<!--        }-->
+
+<!--        button {-->
+<!--            cursor: pointer;-->
+<!--            border: none;-->
+<!--            border-radius: 8px;-->
+<!--            padding: 12px 18px;-->
+<!--            font-size: 1.2rem;-->
+<!--            background-color: #4a63ee;-->
+<!--            color: #fff;-->
+<!--            transition: 0.3s ease;-->
+<!--            box-shadow: 0 4px 8px rgba(0,0,0,0.1);-->
+<!--        }-->
+
+<!--        button:hover {-->
+<!--            background-color: #3a53d1;-->
+<!--            transform: translateY(-2px);-->
+<!--            box-shadow: 0 6px 15px rgba(0,0,0,0.15);-->
+<!--        }-->
+
+<!--        #dictionaryResult {-->
+<!--            margin-top: 20px;-->
+<!--            padding: 20px;-->
+<!--            border: 1px solid #ddd;-->
+<!--            border-radius: 8px;-->
+<!--            background-color: #f0f0f0;-->
+<!--            box-shadow: 0 6px 15px rgba(0,0,0,0.1);-->
+<!--            animation: slideIn 1s ease-out;-->
+<!--        }-->
+
+<!--        #dictionaryResult h2 {-->
+<!--            font-size: 1.5rem;-->
+<!--            color: #333;-->
+<!--            margin-bottom: 10px;-->
+<!--        }-->
+
+<!--        .hidden {-->
+<!--            display: none;-->
+<!--        }-->
+
+<!--        @keyframes fadeIn {-->
+<!--            0% { opacity: 0; }-->
+<!--            100% { opacity: 1; }-->
+<!--        }-->
+
+<!--        @keyframes slideIn {-->
+<!--            0% { transform: translateY(20px); opacity: 0; }-->
+<!--            100% { transform: translateY(0); opacity: 1; }-->
+<!--        }-->
+
+<!--    </style>-->
+<!--</head>-->
+<!--<body>-->
+<!--<div class="container">-->
+<!--    <h1>AI Dictionary & Translator</h1>-->
+
+<!--    <div class="translate-box">-->
+<!--        &lt;!&ndash; باکس سمت راست (ورودی) &ndash;&gt;-->
+<!--        <div class="box">-->
+<!--            <select id="sourceLang">-->
+<!--                <option value="English">English</option>-->
+<!--                <option value="French">French</option>-->
+<!--                <option value="Persian">Persian</option>-->
+<!--                <option value="Spanish">Spanish</option>-->
+<!--                <option value="German">German</option>-->
+<!--                &lt;!&ndash; ... و غیره &ndash;&gt;-->
+<!--            </select>-->
+
+<!--            <textarea id="sourceText" placeholder="Enter text or word here..."></textarea>-->
+
+<!--            <div class="btn-group">-->
+<!--                &lt;!&ndash; دکمه‌ی ضبط صدا برای ورودی &ndash;&gt;-->
+<!--                <button id="micBtn">🎤</button>-->
+<!--                &lt;!&ndash; دکمه‌ی بلندگو برای ورودی &ndash;&gt;-->
+<!--                <button id="speakSourceBtn">🔊</button>-->
+<!--            </div>-->
+<!--        </div>-->
+
+<!--        &lt;!&ndash; دکمه‌ی اصلی ترجمه &ndash;&gt;-->
+<!--        <button id="translateBtn">Translate</button>-->
+
+<!--        &lt;!&ndash; باکس سمت چپ (خروجی) &ndash;&gt;-->
+<!--        <div class="box">-->
+<!--            <select id="targetLang">-->
+<!--                <option value="English">English</option>-->
+<!--                <option value="French">French</option>-->
+<!--                <option value="Persian">Persian</option>-->
+<!--                <option value="Spanish">Spanish</option>-->
+<!--                <option value="German">German</option>-->
+<!--                &lt;!&ndash; ... و غیره &ndash;&gt;-->
+<!--            </select>-->
+
+<!--            <textarea id="translatedText" placeholder="Translation result..." readonly></textarea>-->
+
+<!--            <div class="btn-group">-->
+<!--                &lt;!&ndash; دکمه‌ی بلندگو برای خروجی &ndash;&gt;-->
+<!--                <button id="speakTargetBtn">🔊</button>-->
+<!--            </div>-->
+<!--        </div>-->
+<!--    </div>-->
+
+<!--    &lt;!&ndash; ناحیه‌ای برای نمایش مترادف‌ها، متضادها و جمله‌ی نمونه &ndash;&gt;-->
+<!--    <div id="dictionaryResult" class="hidden">-->
+<!--        <h2>Dictionary Details</h2>-->
+<!--        <p><strong>Synonyms:</strong> <span id="synonyms"></span></p>-->
+<!--        <p><strong>Antonyms:</strong> <span id="antonyms"></span></p>-->
+<!--        <p><strong>Example Sentence:</strong> <span id="exampleSentence"></span></p>-->
+<!--    </div>-->
+
+<!--</div>-->
+
+<!--<script src="dictionary.js"></script>-->
+<!--<script>-->
+<!--    // انتخاب المان‌ها از DOM-->
+<!--    const sourceLangSelect = document.getElementById('sourceLang');-->
+<!--    const targetLangSelect = document.getElementById('targetLang');-->
+<!--    const sourceTextArea = document.getElementById('sourceText');-->
+<!--    const translatedTextArea = document.getElementById('translatedText');-->
+
+<!--    const translateBtn = document.getElementById('translateBtn');-->
+<!--    const micBtn = document.getElementById('micBtn');-->
+<!--    const speakSourceBtn = document.getElementById('speakSourceBtn');-->
+<!--    const speakTargetBtn = document.getElementById('speakTargetBtn');-->
+
+<!--    const dictionaryResult = document.getElementById('dictionaryResult');-->
+<!--    const synonymsSpan = document.getElementById('synonyms');-->
+<!--    const antonymsSpan = document.getElementById('antonyms');-->
+<!--    const exampleSpan = document.getElementById('exampleSentence');-->
+
+<!--    // 1) دکمه‌ی ضبط صدا (ورودی کاربر)-->
+<!--    let recognition;-->
+<!--    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {-->
+<!--        // برای سازگاری با مرورگرهای مختلف-->
+<!--        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;-->
+<!--        recognition = new SpeechRecognition();-->
+<!--        recognition.lang = 'en-US'; // به صورت پیشفرض. یا بسته به زبان sourceLangSelect-->
+<!--    }-->
+
+<!--    micBtn.addEventListener('click', () => {-->
+<!--        if (!recognition) {-->
+<!--            alert('Your browser does not support Speech Recognition');-->
+<!--            return;-->
+<!--        }-->
+<!--        recognition.lang = mapLanguageToLocale(sourceLangSelect.value);-->
+<!--        recognition.start();-->
+<!--    });-->
+
+<!--    // وقتی صدا شناسایی شد و تبدیل به متن شد-->
+<!--    if (recognition) {-->
+<!--        recognition.onresult = (event) => {-->
+<!--            const transcript = event.results[0][0].transcript;-->
+<!--            sourceTextArea.value = transcript;-->
+<!--        };-->
+<!--    }-->
+
+<!--    // یک تابع کمکی برای تعیین locale مرورگر، بر اساس زبان انتخاب شده-->
+<!--    function mapLanguageToLocale(lang) {-->
+<!--        switch (lang) {-->
+<!--            case 'English': return 'en-US';-->
+<!--            case 'French':  return 'fr-FR';-->
+<!--            case 'German':  return 'de-DE';-->
+<!--            case 'Persian': return 'fa-IR';-->
+<!--            case 'Spanish': return 'es-ES';-->
+<!--            default:        return 'en-US';-->
+<!--        }-->
+<!--    }-->
+
+<!--    // 2) تبدیل متن به گفتار-->
+<!--    function speakText(text, lang) {-->
+<!--        if ('speechSynthesis' in window) {-->
+<!--            const utterance = new SpeechSynthesisUtterance(text);-->
+<!--            utterance.lang = mapLanguageToLocale(lang);-->
+<!--            speechSynthesis.speak(utterance);-->
+<!--        } else {-->
+<!--            alert('Your browser does not support Text To Speech');-->
+<!--        }-->
+<!--    }-->
+
+<!--    speakSourceBtn.addEventListener('click', () => {-->
+<!--        speakText(sourceTextArea.value, sourceLangSelect.value);-->
+<!--    });-->
+
+<!--    speakTargetBtn.addEventListener('click', () => {-->
+<!--        speakText(translatedTextArea.value, targetLangSelect.value);-->
+<!--    });-->
+
+<!--    // 3) ترجمه با هوش مصنوعی-->
+<!--    translateBtn.addEventListener('click', async () => {-->
+<!--        const text = sourceTextArea.value.trim();-->
+<!--        const sourceLang = sourceLangSelect.value;-->
+<!--        const targetLang = targetLangSelect.value;-->
+
+<!--        if (!text) {-->
+<!--            alert('Please enter or speak some text to translate.');-->
+<!--            return;-->
+<!--        }-->
+
+<!--        try {-->
+<!--            const response = await fetch('/api/translate', {-->
+<!--                method: 'POST',-->
+<!--                headers: {-->
+<!--                    'Content-Type': 'application/json',-->
+<!--                },-->
+<!--                body: JSON.stringify({-->
+<!--                    text,-->
+<!--                    sourceLang,-->
+<!--                    targetLang-->
+<!--                }),-->
+<!--            });-->
+
+<!--            if (!response.ok) throw new Error('Translation failed.');-->
+
+<!--            const data = await response.json();-->
+
+<!--            // داده‌ی دریافتی را در textarea مقصد نمایش می‌دهیم-->
+<!--            translatedTextArea.value = data.translation || '';-->
+
+<!--            // اگر مترادف و متضاد و جمله نمونه فرستاد، نمایش می‌دهیم-->
+<!--            if (data.synonyms || data.antonyms || data.example) {-->
+<!--                dictionaryResult.classList.remove('hidden');-->
+<!--                synonymsSpan.textContent = data.synonyms || 'N/A';-->
+<!--                antonymsSpan.textContent = data.antonyms || 'N/A';-->
+<!--                exampleSpan.innerHTML = data.example || 'N/A';  // ممکن است شامل تگ‌های HTML برای Bold کردن باشد-->
+<!--            } else {-->
+<!--                dictionaryResult.classList.add('hidden');-->
+<!--            }-->
+<!--        } catch (error) {-->
+<!--            console.error(error);-->
+<!--            alert('Error while translating. Check console for details.');-->
+<!--        }-->
+<!--    });-->
+
+<!--</script>-->
+<!--</body>-->
+<!--</html>-->
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Dictionary & Translator</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Reset و طراحی کلی */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        /* گرادیانت متحرک برای پس‌زمینه */
+        body::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            animation: rotateGradient 20s linear infinite;
+            z-index: -1;
+        }
+
+        @keyframes rotateGradient {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+            animation: fadeIn 1s ease-in-out;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            animation: rotateGradient 20s linear infinite;
+            z-index: -1;
+        }
+
+        h1 {
+            font-size: 2.8rem;
+            color: #fff;
+            margin-bottom: 30px;
+            text-align: center;
+            font-weight: 700;
+            text-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .translate-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .box select,
+        .box textarea {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            font-size: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transition: all 0.3s ease-in-out;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .box select:focus,
+        .box textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .box textarea::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        button {
+            cursor: pointer;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-size: 1.1rem;
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        button i {
+            font-size: 1.2rem;
+        }
+
+        #dictionaryResult {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+            animation: slideIn 1s ease-out;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        #dictionaryResult h2 {
+            font-size: 1.6rem;
+            color: #fff;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        #dictionaryResult p {
+            font-size: 1rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 10px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; transform: translateY(-20px); }
+            100% { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            0% { transform: translateY(20px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>AI Dictionary & Translator</h1>
+
+    <div class="translate-box">
+        <!-- باکس سمت راست (ورودی) -->
+        <div class="box">
+            <select id="sourceLang">
+                <option value="English">English</option>
+                <option value="French">French</option>
+                <option value="Persian">Persian</option>
+                <option value="Spanish">Spanish</option>
+                <option value="German">German</option>
+            </select>
+
+            <textarea id="sourceText" placeholder="Enter text or word here..."></textarea>
+
+            <div class="btn-group">
+                <button id="micBtn"><i class="fas fa-microphone"></i></button>
+                <button id="speakSourceBtn"><i class="fas fa-volume-up"></i></button>
+            </div>
+        </div>
+
+        <!-- دکمه‌ی اصلی ترجمه -->
+        <button id="translateBtn"><i class="fas fa-exchange-alt"></i> Translate</button>
+
+        <!-- باکس سمت چپ (خروجی) -->
+        <div class="box">
+            <select id="targetLang">
+                <option value="English">English</option>
+                <option value="French">French</option>
+                <option value="Persian">Persian</option>
+                <option value="Spanish">Spanish</option>
+                <option value="German">German</option>
+            </select>
+
+            <textarea id="translatedText" placeholder="Translation result..." readonly></textarea>
+
+            <div class="btn-group">
+                <button id="speakTargetBtn"><i class="fas fa-volume-up"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ناحیه‌ای برای نمایش مترادف‌ها، متضادها و جمله‌ی نمونه -->
+    <div id="dictionaryResult" class="hidden">
+        <h2>Dictionary Details</h2>
+        <p><strong>Synonyms:</strong> <span id="synonyms"></span></p>
+        <p><strong>Antonyms:</strong> <span id="antonyms"></span></p>
+        <p><strong>Example Sentence:</strong> <span id="exampleSentence"></span></p>
+    </div>
+</div>
+
+<script>
+    // انتخاب المان‌ها از DOM
+    const sourceLangSelect = document.getElementById('sourceLang');
+    const targetLangSelect = document.getElementById('targetLang');
+    const sourceTextArea = document.getElementById('sourceText');
+    const translatedTextArea = document.getElementById('translatedText');
+
+    const translateBtn = document.getElementById('translateBtn');
+    const micBtn = document.getElementById('micBtn');
+    const speakSourceBtn = document.getElementById('speakSourceBtn');
+    const speakTargetBtn = document.getElementById('speakTargetBtn');
+
+    const dictionaryResult = document.getElementById('dictionaryResult');
+    const synonymsSpan = document.getElementById('synonyms');
+    const antonymsSpan = document.getElementById('antonyms');
+    const exampleSpan = document.getElementById('exampleSentence');
+
+    // 1) دکمه‌ی ضبط صدا (ورودی کاربر)
+    let recognition;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        // برای سازگاری با مرورگرهای مختلف
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'en-US'; // به صورت پیشفرض. یا بسته به زبان sourceLangSelect
+    }
+
+    micBtn.addEventListener('click', () => {
+        if (!recognition) {
+            alert('Your browser does not support Speech Recognition');
+            return;
+        }
+        recognition.lang = mapLanguageToLocale(sourceLangSelect.value);
+        recognition.start();
+    });
+
+    // وقتی صدا شناسایی شد و تبدیل به متن شد
+    if (recognition) {
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            sourceTextArea.value = transcript;
+        };
+    }
+
+    // یک تابع کمکی برای تعیین locale مرورگر، بر اساس زبان انتخاب شده
+    function mapLanguageToLocale(lang) {
+        switch (lang) {
+            case 'English': return 'en-US';
+            case 'French':  return 'fr-FR';
+            case 'German':  return 'de-DE';
+            case 'Persian': return 'fa-IR';
+            case 'Spanish': return 'es-ES';
+            default:        return 'en-US';
+        }
+    }
+
+    // 2) تبدیل متن به گفتار
+    function speakText(text, lang) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = mapLanguageToLocale(lang);
+            speechSynthesis.speak(utterance);
+        } else {
+            alert('Your browser does not support Text To Speech');
+        }
+    }
+
+    speakSourceBtn.addEventListener('click', () => {
+        speakText(sourceTextArea.value, sourceLangSelect.value);
+    });
+
+    speakTargetBtn.addEventListener('click', () => {
+        speakText(translatedTextArea.value, targetLangSelect.value);
+    });
+
+    // 3) ترجمه با هوش مصنوعی
+    translateBtn.addEventListener('click', async () => {
+        const text = sourceTextArea.value.trim();
+        const sourceLang = sourceLangSelect.value;
+        const targetLang = targetLangSelect.value;
+
+        if (!text) {
+            alert('Please enter or speak some text to translate.');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/translate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    text,
+                    sourceLang,
+                    targetLang
+                }),
+            });
+
+            if (!response.ok) throw new Error('Translation failed.');
+
+            const data = await response.json();
+
+            // داده‌ی دریافتی را در textarea مقصد نمایش می‌دهیم
+            translatedTextArea.value = data.translation || '';
+
+            // اگر مترادف و متضاد و جمله نمونه فرستاد، نمایش می‌دهیم
+            if (data.synonyms || data.antonyms || data.example) {
+                dictionaryResult.classList.remove('hidden');
+                synonymsSpan.textContent = data.synonyms || 'N/A';
+                antonymsSpan.textContent = data.antonyms || 'N/A';
+                exampleSpan.innerHTML = data.example || 'N/A';  // ممکن است شامل تگ‌های HTML برای Bold کردن باشد
+            } else {
+                dictionaryResult.classList.add('hidden');
+            }
+        } catch (error) {
+            console.error(error);
+            alert('Error while translating. Check console for details.');
+        }
+    });
+
+</script>
+</body>
+</html>

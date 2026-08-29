@@ -1,0 +1,53 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Test Result — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .result-header {
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: #fff;
+        padding: 2rem;
+        border-radius: 15px;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
+    .analysis-container {
+        background: #ffffff;
+        padding: 2rem;
+        border-radius: 15px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        direction: rtl;
+        text-align: right;
+    }
+
+    .level-title {
+        font-size: 1.6em;
+        font-weight: bold;
+        margin-bottom: 15px;
+        color: #2980b9;
+    }
+
+    .level-explanation { font-size: 1.05em; line-height: 1.9; color: var(--text); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 800px;">
+    <div class="result-header">
+        <h1 class="h3 mb-2"><i class="fas fa-award me-2"></i>نتیجه تحلیل آزمون</h1>
+        <p class="mb-0">تحلیل هوشمند آزمون تعیین سطح</p>
+    </div>
+    <div class="analysis-container">
+        <div class="level-title">{{ level_title|safe }}</div>
+        <div class="level-explanation">{{ level_explanation|safe }}</div>
+        <div class="mt-4 d-flex gap-2 flex-wrap" >
+            <a href="{% url 'teach' %}" class="btn btn-brand"><i class="fas fa-chalkboard-teacher ms-2"></i>شروع یادگیری در سطح من</a>
+            <a href="{% url 'home' %}" class="btn btn-outline-secondary">بازگشت به داشبورد</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

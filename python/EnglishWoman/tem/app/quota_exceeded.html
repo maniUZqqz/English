@@ -1,0 +1,22 @@
+﻿{% extends 'base.html' %}
+
+{% block title %}Daily Limit Reached — English Lady{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 620px;">
+    <div class="card p-5 text-center">
+        <div style="font-size: 3rem;">⏳</div>
+        <h3 class="mt-3" style="direction: rtl;">سهمیه‌ی امروز تمام شد</h3>
+        <p class="text-secondary" style="direction: rtl;">
+            {{ message }}
+        </p>
+        <p class="text-secondary small">
+            You have used all {{ limit }} AI requests for today. Your quota resets at midnight.
+        </p>
+        <div class="mt-3">
+            <a href="{% url 'home' %}" class="btn btn-brand">Back to Dashboard</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

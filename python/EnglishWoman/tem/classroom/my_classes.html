@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}کلاس‌های من — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .class-card {
+        background: var(--surface);
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+        padding: 1.4rem;
+        height: 100%;
+        transition: transform 0.2s;
+        position: relative;
+    }
+
+    .class-card:hover { transform: translateY(-4px); }
+
+    .join-code {
+        font-family: monospace;
+        font-size: 1.05rem;
+        letter-spacing: 0.15em;
+        background: var(--surface-2);
+        border: 1px dashed var(--line);
+        border-radius: 8px;
+        padding: 2px 10px;
+        direction: ltr;
+        display: inline-block;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <h3 class="mb-0"><i class="fas fa-users ms-2 text-primary"></i>کلاس‌های من</h3>
+        {% if is_teacher %}
+            <a href="{% url 'create_class' %}" class="btn btn-brand">
+                <i class="fas fa-plus ms-2"></i>ساخت کلاس جدید
+            </a>
+        {% endif %}
+    </div>
+
+    <!-- عضویت با کد -->
+    <div class="section-card">
+        <form method="post" action="{% url 'join_class' %}" class="d-flex gap-2 flex-wrap align-items-center">
+            {% csrf_token %}
+            <label class="fw-bold mb-0"><i class="fas fa-key ms-2 text-warning"></i>عضویت در کلاس:</label>
+            <div style="max-width: 220px;">{{ join_form.join_code }}</div>
+            <button type="submit" class="btn btn-brand">عضو شو</button>
+            <span class="text-secondary small">کد کلاس را از معلم خود بگیرید</span>
+        </form>
+    </div>
+
+    {% if is_teacher %}
+        <h5 class="mb-3"><i class="fas fa-chalkboard-teacher ms-2 text-primary"></i>کلاس‌هایی که تدریس می‌کنم</h5>
+        <div class="row g-3 mb-4">
+            {% for c in teaching %}
+                <div class="col-md-6 col-lg-4">
+                    <div class="class-card">
+                        <span class="status-chip chip-info">{{ c.get_level_display }}</span>
+                        {% if not c.is_active %}<span class="status-chip chip-late">غیرفعال</span>{% endif %}
+                        <h5 class="mt-2 mb-1"><a href="{% url 'class_detail' c.pk %}" class="stretched-link text-decoration-none">{{ c.name }}</a></h5>
+                        <div class="text-secondary small mb-2">{{ c.student_count }} زبان‌آموز</div>
+                        <div class="small text-secondary">کد عضویت: <span class="join-code">{{ c.join_code }}</span></div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="col-12 text-secondary">هنوز کلاسی نساخته‌اید.</div>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <h5 class="mb-3"><i class="fas fa-user-graduate ms-2 text-primary"></i>کلاس‌هایی که عضو هستم</h5>
+    <div class="row g-3">
+        {% for c in enrolled %}
+            <div class="col-md-6 col-lg-4">
+                <div class="class-card">
+                    <span class="status-chip chip-info">{{ c.get_level_display }}</span>
+                    <h5 class="mt-2 mb-1"><a href="{% url 'class_detail' c.pk %}" class="stretched-link text-decoration-none">{{ c.name }}</a></h5>
+                    <div class="text-secondary small">معلم: {{ c.teacher.username }}</div>
+                </div>
+            </div>
+        {% empty %}
+            <div class="col-12 text-secondary">
+                هنوز عضو هیچ کلاسی نیستید — کد کلاس را از معلم بگیرید و بالا وارد کنید.
+            </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

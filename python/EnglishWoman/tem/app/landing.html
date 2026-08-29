@@ -1,0 +1,306 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}English Lady — یادگیری زبان انگلیسی با هوش مصنوعی{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero {
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: #fff;
+        padding: 90px 0 70px;
+    }
+
+    .hero h1 {
+        font-size: 42px;
+        font-weight: 800;
+        line-height: 1.35;
+        margin-bottom: 20px;
+    }
+
+    .hero p {
+        font-size: 19px;
+        margin-bottom: 30px;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .hero-video {
+        width: 100%;
+        max-width: 460px;
+        border-radius: 24px;
+        box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-cta {
+        padding: 13px 34px;
+        background: #ff758c;
+        color: #fff;
+        border: none;
+        border-radius: 30px;
+        font-size: 17px;
+        font-weight: 700;
+        transition: background 0.3s, transform 0.3s;
+        display: inline-block;
+        text-decoration: none;
+    }
+
+    .btn-cta:hover {
+        background: #ff7eb3;
+        color: #fff;
+        transform: translateY(-3px);
+    }
+
+    .section-title {
+        font-size: 32px;
+        font-weight: 800;
+        text-align: center;
+        margin-bottom: 12px;
+    }
+
+    .section-title::after {
+        content: '';
+        width: 60px;
+        height: 4px;
+        background: var(--brand);
+        display: block;
+        margin: 12px auto 0;
+        border-radius: 2px;
+    }
+
+    .section-sub {
+        text-align: center;
+        color: var(--text-soft);
+        margin-bottom: 45px;
+    }
+
+    .feature-card {
+        background: var(--surface);
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+        padding: 32px 22px;
+        text-align: center;
+        height: 100%;
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .feature-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 10px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .feature-card i {
+        font-size: 2.4rem;
+        color: var(--brand);
+        margin-bottom: 18px;
+    }
+
+    .feature-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 12px; }
+    .feature-card p { color: var(--text-soft); font-size: 15px; }
+
+    .pricing-card {
+        background: var(--surface);
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+        padding: 32px 24px;
+        text-align: center;
+        height: 100%;
+        transition: transform 0.3s;
+    }
+
+    .pricing-card:hover { transform: translateY(-8px); }
+
+    .pricing-card.popular {
+        background: linear-gradient(145deg, #3498db, #2980b9);
+        color: #fff;
+    }
+
+    .pricing-card .price { font-size: 28px; font-weight: 800; margin: 14px 0 20px; }
+    .pricing-card ul { list-style: none; padding: 0; text-align: start; margin-bottom: 22px; }
+    .pricing-card ul li { margin-bottom: 9px; }
+    .pricing-card ul li i { color: #2ecc71; margin-inline-end: 8px; }
+    .pricing-card.popular ul li i { color: #fff; }
+
+    .about-photo { max-width: 280px; border-radius: 50%; }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Hero -->
+<section class="hero">
+    <div class="container">
+        <div class="row align-items-center g-5">
+            <div class="col-lg-6">
+                <h1>یادگیری زبان انگلیسی با معلم هوش مصنوعی</h1>
+                <p>تعیین سطح هوشمند، درس‌نامه‌ی شخصی، تمرین مکالمه و شنیداری، کلاس آنلاین با معلم واقعی — همه در یک‌جا.</p>
+                <a href="{% url 'register' %}" class="btn-cta ms-2"><i class="fas fa-rocket ms-2"></i>رایگان شروع کن</a>
+                <a href="{% url 'login' %}" class="btn-cta" style="background: rgba(255,255,255,0.15);">ورود</a>
+            </div>
+            <div class="col-lg-6 text-center">
+                <video class="hero-video" src="{% static 'video/AI-English-Robot-Teacher.mp4' %}" autoplay loop muted playsinline></video>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="py-5" id="features">
+    <div class="container py-4">
+        <h2 class="section-title">همه‌چیز برای یادگیری، یک‌جا</h2>
+        <p class="section-sub">جعبه‌ابزار کامل هوش مصنوعی + کلاس آنلاین</p>
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-clipboard-check"></i>
+                    <h3>تعیین سطح هوشمند</h3>
+                    <p>آزمون تطبیقی سطح CEFR شما را مشخص می‌کند تا هر درس دقیقاً اندازه‌تان باشد.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <h3>درس‌نامه شخصی</h3>
+                    <p>درس گرامر مخصوص سطح شما با ترجمه فارسی و تمرین — تولیدشده با هوش مصنوعی.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-users"></i>
+                    <h3>کلاس آنلاین</h3>
+                    <p>با کد کلاس عضو شوید: تکلیف، آزمون کلاسی، حضورغیاب و کارنامه — مثل یک موسسه واقعی.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-microphone"></i>
+                    <h3>تمرین مکالمه و شنیداری</h3>
+                    <p>با معلم صوتی هوشمند انگلیسی حرف بزنید و مهارت شنیداری‌تان را تقویت کنید.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-clone"></i>
+                    <h3>دفتر لغات با مرور لایتنر</h3>
+                    <p>لغت‌ها را ذخیره کنید و با فلش‌کارت در فاصله‌های هوشمند مرور کنید تا هرگز فراموش نشوند.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <i class="fas fa-book"></i>
+                    <h3>دیکشنری و چک گرامر</h3>
+                    <p>ترجمه با مترادف و مثال، اصلاح گرامر با توضیح خطاها — همیشه در دسترس.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Pricing -->
+<section class="py-5" id="pricing" style="background: var(--surface);">
+    <div class="container py-4">
+        <h2 class="section-title">تعرفه‌ها</h2>
+        <p class="section-sub">رایگان شروع کنید، هر وقت خواستید ارتقا دهید</p>
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-4">
+                <div class="pricing-card">
+                    <h3>نقره‌ای</h3>
+                    <div class="price">۲۹,۰۰۰ <small>تومان</small></div>
+                    <ul>
+                        <li><i class="fas fa-check"></i>چت‌بات صوتی</li>
+                        <li><i class="fas fa-check"></i>درس‌نامه‌های پایه</li>
+                        <li><i class="fas fa-check"></i>پشتیبانی ایمیلی</li>
+                    </ul>
+                    <a href="{% url 'register' %}" class="btn btn-brand w-100">انتخاب</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="pricing-card popular">
+                    <h3>حرفه‌ای</h3>
+                    <div class="price">۹۹,۰۰۰ <small>تومان</small></div>
+                    <ul>
+                        <li><i class="fas fa-check"></i>همه ابزارهای هوشمند</li>
+                        <li><i class="fas fa-check"></i>درس‌نامه و آزمون نامحدود</li>
+                        <li><i class="fas fa-check"></i>پشتیبانی ۲۴/۷</li>
+                        <li><i class="fas fa-check"></i>مشاوره اختصاصی</li>
+                    </ul>
+                    <a href="{% url 'register' %}" class="btn btn-light w-100 fw-bold">انتخاب</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="pricing-card">
+                    <h3>پایه</h3>
+                    <div class="price">۴۹,۰۰۰ <small>تومان</small></div>
+                    <ul>
+                        <li><i class="fas fa-check"></i>چت‌بات صوتی</li>
+                        <li><i class="fas fa-check"></i>درس‌نامه‌های پایه</li>
+                        <li><i class="fas fa-check"></i>پشتیبانی ایمیلی</li>
+                    </ul>
+                    <a href="{% url 'register' %}" class="btn btn-brand w-100">انتخاب</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- FAQ -->
+<section class="py-5" id="faq">
+    <div class="container py-4" style="max-width: 800px;">
+        <h2 class="section-title">سوالات متداول</h2>
+        <p class="section-sub"></p>
+        <div class="accordion" id="faqAccordion">
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                        آزمون تعیین سطح چطور کار می‌کند؟
+                    </button>
+                </h2>
+                <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        به ۱۰ سوال گرامری تولیدشده با هوش مصنوعی پاسخ می‌دهید. سپس AI پاسخ‌ها را تحلیل کرده و سطح CEFR شما را تخمین می‌زند و همه درس‌ها را متناسب با آن می‌سازد.
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                        کلاس آنلاین چطور کار می‌کند؟
+                    </button>
+                </h2>
+                <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        معلم کلاس می‌سازد و کد عضویت به شما می‌دهد. با کد وارد کلاس می‌شوید و تکلیف‌ها، آزمون‌های کلاسی، اطلاعیه‌ها و کارنامه‌تان را می‌بینید.
+                    </div>
+                </div>
+            </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                        پیشرفت من ذخیره می‌شود؟
+                    </button>
+                </h2>
+                <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                    <div class="accordion-body">
+                        بله — سطح، درس‌نامه‌ها، نتایج آزمون، لغات ذخیره‌شده و استریک روزانه‌تان در حساب شخصی‌تان نگهداری و در داشبورد نمایش داده می‌شود.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- About -->
+<section class="py-5" id="about" style="background: var(--surface);">
+    <div class="container py-4">
+        <h2 class="section-title">درباره ما</h2>
+        <p class="section-sub"></p>
+        <div class="row align-items-center g-4">
+            <div class="col-md-7">
+                <p class="fs-5 text-secondary">ما تیمی از متخصصان هوش مصنوعی و آموزش زبان هستیم که هدفمان ارائه بهترین ابزارهای آموزشی به شماست. با فناوری‌های پیشرفته، تجربه‌ای متفاوت و موثر در یادگیری انگلیسی می‌سازیم.</p>
+                <p class="fs-5 text-secondary">با تمرکز بر نیازهای شما، برنامه آموزشی شخصی‌سازی‌شده و پشتیبانی مستمر ارائه می‌دهیم تا به بهترین شکل به اهداف زبانی‌تان برسید.</p>
+            </div>
+            <div class="col-md-5 text-center">
+                <img src="{% static 'IMG/robot.png' %}" class="about-photo img-fluid" alt="English Lady AI Teacher">
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

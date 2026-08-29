@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}آزمون جدید — English Lady{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 640px;">
+    <div class="section-card">
+        <h4 class="mb-3"><i class="fas fa-file-signature ms-2 text-danger"></i>آزمون جدید برای «{{ classroom.name }}»</h4>
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label class="form-label fw-bold">عنوان آزمون</label>
+                {{ form.title }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">توضیحات</label>
+                {{ form.description }}
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">مدت زمان (دقیقه)</label>
+                {{ form.duration_minutes }}
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-brand"><i class="fas fa-arrow-left ms-2"></i>ادامه: افزودن سوال</button>
+                <a href="{% url 'class_detail' classroom.pk %}" class="btn btn-outline-secondary">انصراف</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,254 @@
+{% extends 'base.html' %}
+
+{% block title %}دیکشنری هوشمند — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dict-container {
+        max-width: 900px;
+        margin: 2rem auto;
+        background: var(--surface);
+        border-radius: 20px;
+        box-shadow: var(--shadow);
+        padding: 2rem;
+    }
+
+    .dict-header {
+        display: flex;
+        align-items: center;
+        gap: 0.8rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .dict-header .icon {
+        width: 44px; height: 44px; border-radius: 12px;
+        background: linear-gradient(145deg, #e67e22, #d35400);
+        color: white; display: flex; align-items: center; justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .lang-select {
+        border: 2px solid var(--line);
+        border-radius: 10px;
+        padding: 0.5rem 0.8rem;
+        outline: none;
+        background: var(--surface);
+        color: var(--text);
+    }
+
+    .dict-textarea {
+        width: 100%;
+        border: 2px solid var(--line);
+        border-radius: 12px;
+        padding: 1rem;
+        min-height: 130px;
+        outline: none;
+        resize: vertical;
+        background: var(--surface);
+        color: var(--text);
+    }
+
+    .dict-textarea:focus { border-color: #e67e22; }
+
+    .icon-btn {
+        border: none;
+        background: var(--surface-2);
+        color: var(--text);
+        width: 40px; height: 40px;
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+
+    .icon-btn:hover { background: var(--line); }
+
+    #dictionaryResult {
+        margin-top: 1.5rem;
+        background: var(--surface-2);
+        border-inline-start: 4px solid #e67e22;
+        border-radius: 14px;
+        padding: 1.2rem 1.4rem;
+    }
+
+    #dictionaryResult .row-item { margin-bottom: 0.6rem; }
+    .hidden { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="dict-container">
+        <div class="dict-header">
+            <div class="icon"><i class="fas fa-book"></i></div>
+            <div>
+                <h5 class="mb-0">دیکشنری و مترجم هوشمند</h5>
+                <small class="text-secondary">ترجمه کلمه و جمله — با مترادف، متضاد و مثال. لغت‌ها را در دفتر لغات ذخیره کن!</small>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+            <select id="sourceLang" class="lang-select">
+                <option>English</option>
+                <option>Persian</option>
+                <option>French</option>
+                <option>German</option>
+                <option>Spanish</option>
+            </select>
+            <i class="fas fa-arrow-left text-secondary"></i>
+            <select id="targetLang" class="lang-select">
+                <option>Persian</option>
+                <option>English</option>
+                <option>French</option>
+                <option>German</option>
+                <option>Spanish</option>
+            </select>
+        </div>
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <textarea id="sourceText" class="dict-textarea en" placeholder="کلمه یا جمله را وارد کن…"></textarea>
+                <div class="d-flex gap-2 mt-2">
+                    <button id="micBtn" class="icon-btn" title="گفتن"><i class="fas fa-microphone"></i></button>
+                    <button id="speakSourceBtn" class="icon-btn" title="شنیدن"><i class="fas fa-volume-up"></i></button>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <textarea id="translatedText" class="dict-textarea" placeholder="ترجمه…" readonly></textarea>
+                <div class="d-flex gap-2 mt-2">
+                    <button id="speakTargetBtn" class="icon-btn" title="شنیدن"><i class="fas fa-volume-up"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <button id="translateBtn" class="btn btn-brand mt-3 px-4" style="background: linear-gradient(145deg, #e67e22, #d35400);">
+            <i class="fas fa-language ms-2"></i>ترجمه
+        </button>
+
+        <div id="dictionaryResult" class="hidden">
+            <div class="row-item"><strong><i class="fas fa-equals ms-2 text-warning"></i>مترادف:</strong> <span id="synonyms" class="en"></span></div>
+            <div class="row-item"><strong><i class="fas fa-not-equal ms-2 text-warning"></i>متضاد:</strong> <span id="antonyms" class="en"></span></div>
+            <div class="row-item"><strong><i class="fas fa-quote-right ms-2 text-warning"></i>مثال:</strong> <span id="exampleSentence" class="en"></span></div>
+            <button id="saveWordBtn" class="btn btn-sm btn-outline-warning mt-2">
+                <i class="fas fa-bookmark ms-1"></i>ذخیره در دفتر لغات
+            </button>
+            <span id="saveStatus" class="me-2 small text-success"></span>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const sourceLangSelect = document.getElementById('sourceLang');
+    const targetLangSelect = document.getElementById('targetLang');
+    const sourceTextArea = document.getElementById('sourceText');
+    const translatedTextArea = document.getElementById('translatedText');
+
+    const translateBtn = document.getElementById('translateBtn');
+    const micBtn = document.getElementById('micBtn');
+    const speakSourceBtn = document.getElementById('speakSourceBtn');
+    const speakTargetBtn = document.getElementById('speakTargetBtn');
+
+    const dictionaryResult = document.getElementById('dictionaryResult');
+    const synonymsSpan = document.getElementById('synonyms');
+    const antonymsSpan = document.getElementById('antonyms');
+    const exampleSpan = document.getElementById('exampleSentence');
+    const saveWordBtn = document.getElementById('saveWordBtn');
+    const saveStatus = document.getElementById('saveStatus');
+
+    let lastResult = null;
+
+    let recognition;
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.onresult = (event) => {
+            sourceTextArea.value = event.results[0][0].transcript;
+        };
+    }
+
+    micBtn.addEventListener('click', () => {
+        if (!recognition) {
+            alert('مرورگر شما از تشخیص گفتار پشتیبانی نمی‌کند.');
+            return;
+        }
+        recognition.lang = mapLanguageToLocale(sourceLangSelect.value);
+        recognition.start();
+    });
+
+    function mapLanguageToLocale(lang) {
+        switch (lang) {
+            case 'English': return 'en-US';
+            case 'French':  return 'fr-FR';
+            case 'German':  return 'de-DE';
+            case 'Persian': return 'fa-IR';
+            case 'Spanish': return 'es-ES';
+            default:        return 'en-US';
+        }
+    }
+
+    function speakText(text, lang) {
+        if (!('speechSynthesis' in window)) return;
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = mapLanguageToLocale(lang);
+        speechSynthesis.speak(utterance);
+    }
+
+    speakSourceBtn.addEventListener('click', () => speakText(sourceTextArea.value, sourceLangSelect.value));
+    speakTargetBtn.addEventListener('click', () => speakText(translatedTextArea.value, targetLangSelect.value));
+
+    translateBtn.addEventListener('click', async () => {
+        const text = sourceTextArea.value.trim();
+        if (!text) return;
+
+        translateBtn.disabled = true;
+        translatedTextArea.value = 'در حال ترجمه…';
+        saveStatus.textContent = '';
+
+        try {
+            const data = await apiPost("{% url 'api_translate' %}", {
+                text,
+                sourceLang: sourceLangSelect.value,
+                targetLang: targetLangSelect.value,
+            });
+
+            translatedTextArea.value = data.translation || '';
+
+            if (data.synonyms || data.antonyms || data.example) {
+                dictionaryResult.classList.remove('hidden');
+                synonymsSpan.textContent = data.synonyms || '—';
+                antonymsSpan.textContent = data.antonyms || '—';
+                exampleSpan.innerHTML = (data.example || '—')
+                    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+                lastResult = { word: text, ...data };
+                saveWordBtn.style.display = data.is_single_word ? '' : 'none';
+            } else {
+                dictionaryResult.classList.add('hidden');
+                lastResult = null;
+            }
+        } catch (error) {
+            translatedTextArea.value = '';
+            alert(error.message || 'خطا در ترجمه. دوباره تلاش کنید.');
+        } finally {
+            translateBtn.disabled = false;
+        }
+    });
+
+    saveWordBtn.addEventListener('click', async () => {
+        if (!lastResult) return;
+        try {
+            await apiPost("{% url 'api_save_word' %}", {
+                word: lastResult.word,
+                translation: lastResult.translation,
+                synonyms: lastResult.synonyms,
+                antonyms: lastResult.antonyms,
+                example: lastResult.example,
+            });
+            saveStatus.textContent = '✓ در دفتر لغات ذخیره شد';
+        } catch (e) {
+            saveStatus.textContent = 'ذخیره نشد.';
+        }
+    });
+</script>
+{% endblock %}

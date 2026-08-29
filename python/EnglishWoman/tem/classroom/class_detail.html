@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ classroom.name }} — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .class-header {
+        background: linear-gradient(135deg, #2c3e50, #3498db);
+        color: white;
+        border-radius: 15px;
+        padding: 1.6rem 2rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .join-code {
+        font-family: monospace;
+        font-size: 1.1rem;
+        letter-spacing: 0.15em;
+        background: rgba(255, 255, 255, 0.15);
+        border: 1px dashed rgba(255, 255, 255, 0.5);
+        border-radius: 8px;
+        padding: 2px 12px;
+        direction: ltr;
+        display: inline-block;
+    }
+
+    .announcement {
+        border-inline-start: 3px solid #f1c40f;
+        background: var(--surface-2);
+        border-radius: 10px;
+        padding: 0.8rem 1.1rem;
+        margin-bottom: 0.8rem;
+    }
+
+    .list-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 0.8rem 0;
+        border-bottom: 1px solid var(--line);
+        flex-wrap: wrap;
+    }
+
+    .list-row:last-child { border-bottom: none; }
+
+    .table-progress th { white-space: nowrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="class-header">
+        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+            <div>
+                <h3 class="mb-1">{{ classroom.name }}</h3>
+                <div>{{ classroom.get_level_display }} · معلم: {{ classroom.teacher.username }}</div>
+                {% if classroom.description %}<div class="mt-2 small" style="opacity:0.9;">{{ classroom.description }}</div>{% endif %}
+                {% if schedules %}
+                    <div class="mt-2 small">
+                        <i class="fas fa-calendar-alt ms-1"></i>
+                        {% for s in schedules %}{{ s.get_weekday_display }} {{ s.start_time|time:"H:i" }}–{{ s.end_time|time:"H:i" }}{% if not forloop.last %} · {% endif %}{% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="text-start">
+                {% if is_teacher %}
+                    <div class="small mb-1">کد عضویت (به زبان‌آموزها بدهید):</div>
+                    <span class="join-code">{{ classroom.join_code }}</span>
+                {% else %}
+                    <div class="d-flex flex-column gap-2 align-items-end">
+                        <a href="{% url 'my_report_card' classroom.pk %}" class="btn btn-sm btn-light">
+                            <i class="fas fa-file-alt ms-1"></i>کارنامه من
+                        </a>
+                        <form method="post" action="{% url 'leave_class' classroom.pk %}"
+                              onsubmit="return confirm('از این کلاس خارج می‌شوید؟');">
+                            {% csrf_token %}
+                            <button class="btn btn-sm btn-outline-light">خروج از کلاس</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <!-- تکالیف -->
+            <div class="section-card">
+                <h5 class="mb-3"><i class="fas fa-tasks ms-2 text-primary"></i>تکلیف‌ها</h5>
+                {% for row in assignment_rows %}
+                    <div class="list-row">
+                        <div>
+                            <a href="{% url 'assignment_detail' row.assignment.pk %}" class="fw-bold text-decoration-none">
+                                {{ row.assignment.title }}
+                            </a>
+                            <div class="small text-secondary">
+                                {% if row.assignment.due_date %}مهلت: {{ row.assignment.due_date|date:"Y/m/d H:i" }}{% else %}بدون مهلت{% endif %}
+                            </div>
+                        </div>
+                        <div>
+                            {% if is_teacher %}
+                                <span class="status-chip chip-pending">{{ row.submitted_count }} تحویل</span>
+                                <span class="status-chip chip-done">{{ row.graded_count }} نمره‌داده</span>
+                            {% else %}
+                                {% if row.submission %}
+                                    {% if row.submission.is_graded %}
+                                        <span class="status-chip chip-done">نمره: {{ row.submission.grade }}/۱۰۰</span>
+                                    {% else %}
+                                        <span class="status-chip chip-done">تحویل شد ✓</span>
+                                    {% endif %}
+                                {% elif row.assignment.is_past_due %}
+                                    <span class="status-chip chip-late">مهلت گذشته</span>
+                                {% else %}
+                                    <span class="status-chip chip-pending">تحویل نشده</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="text-secondary">هنوز تکلیفی نیست.</div>
+                {% endfor %}
+
+                {% if is_teacher %}
+                    <hr>
+                    <h6 class="fw-bold"><i class="fas fa-plus ms-2 text-primary"></i>تکلیف جدید</h6>
+                    <form method="post" action="{% url 'add_assignment' classroom.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-2">{{ assignment_form.title }}</div>
+                        <div class="mb-2">{{ assignment_form.description }}</div>
+                        <div class="mb-2">
+                            <label class="form-label small text-secondary mb-1">مهلت تحویل (اختیاری)</label>
+                            {{ assignment_form.due_date }}
+                        </div>
+                        <button type="submit" class="btn btn-brand btn-sm">ساخت تکلیف</button>
+                    </form>
+                {% endif %}
+            </div>
+
+            <!-- آزمون‌های کلاسی -->
+            <div class="section-card">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0"><i class="fas fa-file-signature ms-2 text-danger"></i>آزمون‌های کلاسی</h5>
+                    {% if is_teacher %}
+                        <a href="{% url 'create_exam' classroom.pk %}" class="btn btn-brand btn-sm">
+                            <i class="fas fa-plus ms-1"></i>آزمون جدید
+                        </a>
+                    {% endif %}
+                </div>
+                {% for row in exam_rows %}
+                    <div class="list-row">
+                        <div>
+                            <a href="{% url 'exam_detail' row.exam.pk %}" class="fw-bold text-decoration-none">
+                                {{ row.exam.title }}
+                            </a>
+                            <div class="small text-secondary">{{ row.exam.duration_minutes }} دقیقه</div>
+                        </div>
+                        <div>
+                            {% if is_teacher %}
+                                {% if row.exam.is_published %}<span class="status-chip chip-done">منتشر شده</span>
+                                {% else %}<span class="status-chip chip-pending">پیش‌نویس</span>{% endif %}
+                                <span class="status-chip chip-info">{{ row.question_count }} سوال · {{ row.attempt_count }} شرکت‌کننده</span>
+                            {% else %}
+                                {% if row.attempt %}
+                                    <span class="status-chip chip-done">نمره: {{ row.attempt.score }}/۱۰۰</span>
+                                {% else %}
+                                    <span class="status-chip chip-pending">شرکت نکرده‌اید</span>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </div>
+                {% empty %}
+                    <div class="text-secondary">هنوز آزمونی نیست.</div>
+                {% endfor %}
+            </div>
+
+            <!-- اطلاعیه‌ها -->
+            <div class="section-card">
+                <h5 class="mb-3"><i class="fas fa-bullhorn ms-2 text-warning"></i>اطلاعیه‌ها</h5>
+                {% for a in announcements %}
+                    <div class="announcement">
+                        <div class="fw-bold">{{ a.title }}</div>
+                        <div class="small">{{ a.body|linebreaksbr }}</div>
+                        <div class="small text-secondary mt-1">{{ a.created_at|date:"Y/m/d H:i" }}</div>
+                    </div>
+                {% empty %}
+                    <div class="text-secondary">هنوز اطلاعیه‌ای نیست.</div>
+                {% endfor %}
+
+                {% if is_teacher %}
+                    <hr>
+                    <form method="post" action="{% url 'add_announcement' classroom.pk %}">
+                        {% csrf_token %}
+                        <div class="mb-2">{{ announcement_form.title }}</div>
+                        <div class="mb-2">{{ announcement_form.body }}</div>
+                        <button type="submit" class="btn btn-brand btn-sm">انتشار اطلاعیه</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-5">
+            {% if is_teacher %}
+                <!-- جلسات و حضور و غیاب -->
+                <div class="section-card">
+                    <h5 class="mb-3"><i class="fas fa-calendar-check ms-2 text-success"></i>جلسات و حضورغیاب</h5>
+                    <form method="post" action="{% url 'add_session' classroom.pk %}" class="d-flex gap-2 flex-wrap mb-3">
+                        {% csrf_token %}
+                        <div style="max-width: 170px;">{{ session_form.date }}</div>
+                        <div class="flex-grow-1">{{ session_form.topic }}</div>
+                        <button type="submit" class="btn btn-brand btn-sm">ثبت جلسه</button>
+                    </form>
+                    {% for s in sessions %}
+                        <div class="list-row">
+                            <div>
+                                <span class="fw-bold">{{ s.date|date:"Y/m/d" }}</span>
+                                {% if s.topic %}<span class="text-secondary small"> — {{ s.topic }}</span>{% endif %}
+                            </div>
+                            <a href="{% url 'session_detail' s.pk %}" class="btn btn-sm btn-outline-primary">
+                                حضورغیاب <i class="fas fa-user-check me-1"></i>
+                            </a>
+                        </div>
+                    {% empty %}
+                        <div class="text-secondary small">جلسه‌ای ثبت نشده — تاریخ جلسه را بالا وارد کنید.</div>
+                    {% endfor %}
+                </div>
+
+                <!-- برنامه هفتگی -->
+                <div class="section-card">
+                    <h5 class="mb-3"><i class="fas fa-calendar-alt ms-2 text-info"></i>برنامه هفتگی</h5>
+                    {% for s in schedules %}
+                        <div class="list-row">
+                            <span>{{ s.get_weekday_display }} — {{ s.start_time|time:"H:i" }} تا {{ s.end_time|time:"H:i" }}</span>
+                            <form method="post" action="{% url 'delete_schedule' classroom.pk s.pk %}">
+                                {% csrf_token %}
+                                <button class="btn btn-sm btn-outline-danger py-0 px-1"><i class="fas fa-times"></i></button>
+                            </form>
+                        </div>
+                    {% empty %}
+                        <div class="text-secondary small mb-2">برنامه‌ای ثبت نشده.</div>
+                    {% endfor %}
+                    <form method="post" action="{% url 'add_schedule' classroom.pk %}" class="d-flex gap-2 flex-wrap mt-2">
+                        {% csrf_token %}
+                        <div style="min-width: 120px;">{{ schedule_form.weekday }}</div>
+                        <div>{{ schedule_form.start_time }}</div>
+                        <div>{{ schedule_form.end_time }}</div>
+                        <button type="submit" class="btn btn-brand btn-sm">افزودن</button>
+                    </form>
+                </div>
+
+                <!-- گزارش پیشرفت زبان‌آموزها -->
+                <div class="section-card">
+                    <h5 class="mb-3"><i class="fas fa-chart-line ms-2 text-success"></i>پیشرفت زبان‌آموزها</h5>
+                    <div style="overflow-x: auto;">
+                        <table class="table table-sm align-middle table-progress">
+                            <thead>
+                                <tr>
+                                    <th>زبان‌آموز</th>
+                                    <th>سطح</th>
+                                    <th title="استریک روزانه">🔥</th>
+                                    <th title="آزمون‌های تمرینی">تمرین</th>
+                                    <th title="میانگین نمره تکالیف">میانگین</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for row in student_rows %}
+                                    <tr>
+                                        <td class="fw-bold">
+                                            <a href="{% url 'report_card' classroom.pk row.user.pk %}" class="text-decoration-none" title="کارنامه">
+                                                {{ row.user.username }}
+                                            </a>
+                                        </td>
+                                        <td class="small en">{{ row.level|truncatechars:20 }}</td>
+                                        <td>{{ row.streak }}</td>
+                                        <td class="small">{{ row.quiz_correct }}/{{ row.quiz_total }}</td>
+                                        <td class="small">{% if row.grade_avg is not None %}{{ row.grade_avg }}{% else %}—{% endif %}</td>
+                                        <td>
+                                            <form method="post" action="{% url 'remove_student' classroom.pk row.user.pk %}"
+                                                  onsubmit="return confirm('{{ row.user.username }} از کلاس حذف شود؟');">
+                                                {% csrf_token %}
+                                                <button class="btn btn-sm btn-outline-danger py-0 px-1" title="حذف از کلاس">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                {% empty %}
+                                    <tr><td colspan="6" class="text-secondary">هنوز زبان‌آموزی عضو نشده — کد عضویت را به اشتراک بگذارید!</td></tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="small text-secondary">💡 روی نام هر زبان‌آموز کلیک کنید تا کارنامه کاملش را ببینید.</div>
+                </div>
+            {% else %}
+                <div class="section-card">
+                    <h5 class="mb-3"><i class="fas fa-lightbulb ms-2 text-warning"></i>تمرین شخصی</h5>
+                    <p class="text-secondary small">بین جلسات کلاس با ابزارهای هوشمند تمرین کنید:</p>
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'teach' %}" class="btn btn-outline-primary btn-sm text-start"><i class="fas fa-chalkboard-teacher ms-2"></i>درس‌نامه متناسب با سطح من</a>
+                        <a href="{% url 'tool_voice' %}" class="btn btn-outline-primary btn-sm text-start"><i class="fas fa-microphone ms-2"></i>تمرین مکالمه</a>
+                        <a href="{% url 'tool_review' %}" class="btn btn-outline-primary btn-sm text-start"><i class="fas fa-clone ms-2"></i>مرور فلش‌کارت لغات</a>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

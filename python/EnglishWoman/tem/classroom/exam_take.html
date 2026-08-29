@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block title %}آزمون: {{ exam.title }} — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .question-box {
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        padding: 1.1rem 1.3rem;
+        margin-bottom: 1rem;
+        background: var(--surface-2);
+    }
+
+    .exam-option { display: block; padding: 6px 0; cursor: pointer; }
+    .exam-option input { margin-inline-start: 8px; }
+
+    .timer-bar {
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        background: var(--surface);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        padding: 0.8rem 1.2rem;
+        margin-bottom: 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    #timer { font-weight: 800; font-variant-numeric: tabular-nums; }
+    #timer.danger { color: #e05d4d; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 760px;">
+    <div class="section-card">
+        <h4 class="mb-1"><i class="fas fa-file-signature ms-2 text-danger"></i>{{ exam.title }}</h4>
+        {% if exam.description %}<p class="text-secondary mb-1">{{ exam.description }}</p>{% endif %}
+        <div class="small text-secondary">{{ questions|length }} سوال · {{ exam.duration_minutes }} دقیقه · فقط یک بار می‌توانید شرکت کنید</div>
+    </div>
+
+    <div class="timer-bar">
+        <span><i class="fas fa-clock ms-2 text-warning"></i>زمان باقی‌مانده:</span>
+        <span id="timer" class="en">--:--</span>
+    </div>
+
+    <form method="post" action="{% url 'take_exam' exam.pk %}" id="examForm">
+        {% csrf_token %}
+        {% for q in questions %}
+            <div class="question-box">
+                <strong class="en d-block mb-2">{{ forloop.counter }}. {{ q.text }}</strong>
+                <div class="en">
+                    <label class="exam-option"><input type="radio" name="q_{{ q.id }}" value="A"> A) {{ q.option_a }}</label>
+                    <label class="exam-option"><input type="radio" name="q_{{ q.id }}" value="B"> B) {{ q.option_b }}</label>
+                    <label class="exam-option"><input type="radio" name="q_{{ q.id }}" value="C"> C) {{ q.option_c }}</label>
+                    <label class="exam-option"><input type="radio" name="q_{{ q.id }}" value="D"> D) {{ q.option_d }}</label>
+                </div>
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-brand btn-lg w-100">
+            <i class="fas fa-check ms-2"></i>پایان آزمون و ثبت پاسخ‌ها
+        </button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // تایمر آزمون — با اتمام زمان، فرم خودکار ارسال می‌شود
+    const totalSeconds = {{ exam.duration_minutes }} * 60;
+    const startTime = Date.now();
+    const timerEl = document.getElementById('timer');
+
+    const interval = setInterval(() => {
+        const elapsed = Math.floor((Date.now() - startTime) / 1000);
+        const remaining = totalSeconds - elapsed;
+        if (remaining <= 0) {
+            clearInterval(interval);
+            timerEl.textContent = '00:00';
+            alert('زمان آزمون تمام شد — پاسخ‌ها ثبت می‌شوند.');
+            document.getElementById('examForm').submit();
+            return;
+        }
+        const m = Math.floor(remaining / 60);
+        const s = remaining % 60;
+        timerEl.textContent = `${m}:${s < 10 ? '0' : ''}${s}`;
+        if (remaining <= 60) timerEl.classList.add('danger');
+    }, 1000);
+</script>
+{% endblock %}

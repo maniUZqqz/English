@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+
+{% block title %}دفتر لغات — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bank-container { max-width: 900px; margin: 2rem auto; }
+
+    .word-card {
+        background: var(--surface);
+        border-radius: 15px;
+        box-shadow: var(--shadow);
+        padding: 1.2rem 1.4rem;
+        margin-bottom: 1rem;
+    }
+
+    .word-title { font-size: 1.25rem; font-weight: 800; direction: ltr; display: inline-block; }
+    .word-translation { color: #e67e22; font-weight: 700; }
+    .word-meta { color: var(--text-soft); font-size: 0.92rem; margin-top: 0.4rem; }
+
+    .icon-btn {
+        border: none;
+        background: var(--surface-2);
+        color: var(--text);
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        cursor: pointer;
+    }
+
+    .icon-btn:hover { background: var(--line); }
+    .icon-btn.danger:hover { color: #e74c3c; }
+
+    .box-chip {
+        font-size: 0.75rem;
+        border-radius: 999px;
+        padding: 2px 10px;
+        background: var(--surface-2);
+        color: var(--text-soft);
+    }
+
+    .box-chip.due { background: rgba(201, 111, 30, 0.15); color: #c96f1e; font-weight: 700; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container bank-container">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
+        <h3 class="mb-0"><i class="fas fa-bookmark ms-2 text-warning"></i>دفتر لغات من</h3>
+        <div class="d-flex gap-2 flex-wrap">
+            {% if due_count %}
+                <a class="btn btn-brand" href="{% url 'tool_review' %}">
+                    <i class="fas fa-clone ms-2"></i>مرور امروز ({{ due_count }} لغت)
+                </a>
+            {% endif %}
+            {% if words %}
+                <a id="practiceBtn" class="btn btn-outline-primary" href="#">
+                    <i class="fas fa-magic ms-2"></i>تمرین با داستان
+                </a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% for w in words %}
+        <div class="word-card" data-word="{{ w.word }}" data-id="{{ w.id }}">
+            <div class="d-flex justify-content-between align-items-start gap-2">
+                <div>
+                    <span class="word-title en">{{ w.word }}</span>
+                    {% if w.translation %}<span class="word-translation me-2">— {{ w.translation }}</span>{% endif %}
+                    <span class="box-chip {% if w.is_due %}due{% endif %}">
+                        جعبه {{ w.box }}{% if w.is_due %} · موعد مرور{% endif %}
+                    </span>
+                    <div class="word-meta">
+                        {% if w.synonyms %}<div><strong>مترادف:</strong> <span class="en">{{ w.synonyms }}</span></div>{% endif %}
+                        {% if w.antonyms %}<div><strong>متضاد:</strong> <span class="en">{{ w.antonyms }}</span></div>{% endif %}
+                        {% if w.example %}<div><strong>مثال:</strong> <span class="en">{{ w.example }}</span></div>{% endif %}
+                    </div>
+                </div>
+                <div class="d-flex gap-2 flex-shrink-0">
+                    <button class="icon-btn" title="تلفظ" onclick="speakWord('{{ w.word|escapejs }}')"><i class="fas fa-volume-up"></i></button>
+                    <button class="icon-btn danger" title="حذف" onclick="deleteWord(this)"><i class="fas fa-trash"></i></button>
+                </div>
+            </div>
+        </div>
+    {% empty %}
+        <div class="word-card text-center text-secondary py-5">
+            <i class="fas fa-book-open fa-2x mb-3 d-block"></i>
+            دفتر لغاتت خالیه! لغت‌های تکی را در
+            <a href="{% url 'tool_dictionary' %}">دیکشنری هوشمند</a> ترجمه و همین‌جا ذخیره کن.
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function speakWord(word) {
+        if (!('speechSynthesis' in window)) return;
+        const u = new SpeechSynthesisUtterance(word);
+        u.lang = 'en-US';
+        speechSynthesis.speak(u);
+    }
+
+    async function deleteWord(btn) {
+        if (!confirm('این لغت حذف شود؟')) return;
+        const card = btn.closest('.word-card');
+        try {
+            await apiPost("{% url 'api_delete_word' %}", { id: card.dataset.id });
+            card.remove();
+        } catch (e) {
+            alert('حذف لغت ممکن نشد.');
+        }
+    }
+
+    const practiceBtn = document.getElementById('practiceBtn');
+    if (practiceBtn) {
+        const words = Array.from(document.querySelectorAll('.word-card[data-word]'))
+            .map(c => c.dataset.word)
+            .slice(0, 10);
+        practiceBtn.href = "{% url 'tool_story' %}?words=" + encodeURIComponent(words.join(', '));
+    }
+</script>
+{% endblock %}
