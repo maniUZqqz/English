@@ -92,9 +92,15 @@ def dictionary_page(request):
 
 @login_required(login_url='login')
 def wordbank_page(request):
-    words = SavedWord.objects.filter(user=request.user)
-    due_count = words.filter(next_review__lte=timezone.localdate()).count()
-    return render(request, 'tools/wordbank.html', {'words': words, 'due_count': due_count})
+    from django.core.paginator import Paginator
+    words_qs = SavedWord.objects.filter(user=request.user)
+    due_count = words_qs.filter(next_review__lte=timezone.localdate()).count()
+    page_obj = Paginator(words_qs, 30).get_page(request.GET.get('page'))
+    return render(request, 'tools/wordbank.html', {
+        'words': page_obj,
+        'page_obj': page_obj,
+        'due_count': due_count,
+    })
 
 
 @login_required(login_url='login')

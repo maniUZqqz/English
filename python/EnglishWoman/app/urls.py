@@ -12,4 +12,5 @@ urlpatterns = [
     path("profile/", views.profile_view, name="profile"),
     path("skills/", views.skills_view, name="skills"),
     path("leaderboard/", views.leaderboard_view, name="leaderboard"),
+    path("sw.js", views.service_worker, name="service_worker"),
 ]

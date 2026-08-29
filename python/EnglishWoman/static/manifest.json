@@ -1,0 +1,27 @@
+{
+    "name": "English Lady — آموزش زبان انگلیسی",
+    "short_name": "English Lady",
+    "description": "موسسه زبان هوشمند: تعیین سطح، درس، کلاس آنلاین و ۵ مهارت با AI",
+    "lang": "fa",
+    "dir": "rtl",
+    "start_url": "/",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "theme_color": "#2c3e50",
+    "background_color": "#f0f2f5",
+    "icons": [
+        {
+            "src": "/static/IMG/robot.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/static/IMG/robot.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        }
+    ]
+}

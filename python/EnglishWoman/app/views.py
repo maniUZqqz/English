@@ -327,6 +327,46 @@ def logout_view(request):
     return redirect("login")
 
 
+SERVICE_WORKER_JS = """
+// Service Worker ساده — کش فایل‌های استاتیک برای سرعت و نصب PWA
+const CACHE = 'english-lady-v1';
+
+self.addEventListener('install', (event) => {
+    self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+    event.waitUntil(
+        caches.keys().then(keys =>
+            Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+        ).then(() => self.clients.claim())
+    );
+});
+
+self.addEventListener('fetch', (event) => {
+    const url = new URL(event.request.url);
+    // فقط استاتیک‌ها cache-first؛ صفحات همیشه از شبکه (داده زنده)
+    if (event.request.method === 'GET' && url.pathname.startsWith('/static/')) {
+        event.respondWith(
+            caches.match(event.request).then(cached =>
+                cached || fetch(event.request).then(response => {
+                    const copy = response.clone();
+                    caches.open(CACHE).then(cache => cache.put(event.request, copy));
+                    return response;
+                })
+            )
+        );
+    }
+});
+"""
+
+
+def service_worker(request):
+    """سرو Service Worker از ریشه دامنه (برای scope کامل PWA)."""
+    from django.http import HttpResponse
+    return HttpResponse(SERVICE_WORKER_JS, content_type='application/javascript')
+
+
 @login_required(login_url='login')
 def leaderboard_view(request):
     """رتبه‌بندی امتیاز (XP) — انگیزه رقابت سالم."""
