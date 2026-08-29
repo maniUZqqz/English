@@ -190,7 +190,10 @@
                          role="progressbar"
                          style="width: {% widthratio used_today daily_limit 100 %}%;"></div>
                 </div>
-                <div class="small text-secondary mt-2">سهمیه هر شب نیمه‌شب ریست می‌شود.</div>
+                <div class="small text-secondary mt-2 d-flex justify-content-between">
+                    <span>سهمیه هر شب نیمه‌شب ریست می‌شود.</span>
+                    <a href="{% url 'plans' %}" class="fw-bold">ارتقا اشتراک ←</a>
+                </div>
             </div>
         </div>
     </div>

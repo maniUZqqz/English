@@ -45,8 +45,13 @@ ALLOWED_HOSTS = [
 AI_BASE_URL = os.environ.get('AI_BASE_URL', 'https://api.metisai.ir/openai/v1')
 AI_API_KEY = os.environ.get('AI_API_KEY', '')
 AI_MODEL = os.environ.get('AI_MODEL', 'gpt-4o-mini')
-# سقف تعداد درخواست AI هر کاربر در روز (کنترل هزینه)
+# سقف تعداد درخواست AI هر کاربر در روز (پلن رایگان — پلن‌های پولی سقف خودشان را دارند)
 AI_DAILY_LIMIT = int(os.environ.get('AI_DAILY_LIMIT', '100'))
+
+# --- درگاه پرداخت زرین‌پال ---
+ZARINPAL_MERCHANT_ID = os.environ.get('ZARINPAL_MERCHANT_ID', '')
+ZARINPAL_SANDBOX = os.environ.get('ZARINPAL_SANDBOX', 'True').lower() in ('1', 'true', 'yes')
+SITE_URL = os.environ.get('SITE_URL', 'http://127.0.0.1:8000')
 
 # Application definition
 
@@ -63,6 +68,7 @@ INSTALLED_APPS = [
     'tools',
     'classroom',
     'library',
+    'billing',
 ]
 
 MIDDLEWARE = [

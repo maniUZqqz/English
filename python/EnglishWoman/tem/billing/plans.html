@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}اشتراک — English Lady{% endblock %}
+
+{% block extra_css %}
+<style>
+    .plan-card {
+        background: var(--surface);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 2rem 1.6rem;
+        text-align: center;
+        height: 100%;
+    }
+
+    .plan-card.popular {
+        background: linear-gradient(145deg, #3498db, #2980b9);
+        color: white;
+    }
+
+    .plan-price { font-size: 1.9rem; font-weight: 800; margin: 0.6rem 0 1rem; }
+    .plan-card ul { list-style: none; padding: 0; text-align: start; margin-bottom: 1.4rem; }
+    .plan-card ul li { margin-bottom: 8px; }
+    .plan-card ul li i { color: #2ecc71; margin-inline-end: 8px; }
+    .plan-card.popular ul li i { color: #fff; }
+
+    .current-sub {
+        background: rgba(46, 139, 87, 0.12);
+        border: 1px solid #2e8b57;
+        border-radius: 14px;
+        padding: 1rem 1.4rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4" style="max-width: 860px;">
+    <h3 class="mb-1"><i class="fas fa-gem ms-2 text-primary"></i>اشتراک</h3>
+    <p class="text-secondary mb-4">سقف فعلی شما: <strong>{{ current_limit }}</strong> درخواست AI در روز — با ارتقا، بیشتر تمرین کن!</p>
+
+    {% if subscription %}
+        <div class="current-sub">
+            ✅ اشتراک <strong>{{ subscription.plan_info.name }}</strong> شما تا
+            <strong>{{ subscription.expires_at|date:"Y/m/d" }}</strong> فعال است.
+            پرداخت دوباره، مدت را تمدید می‌کند.
+        </div>
+    {% endif %}
+
+    {% if not gateway_ready %}
+        <div class="alert alert-warning">
+            ⚙️ درگاه پرداخت هنوز پیکربندی نشده — مدیر باید <code>ZARINPAL_MERCHANT_ID</code> را در <code>.env</code> تنظیم کند.
+        </div>
+    {% endif %}
+
+    <div class="row g-4">
+        {% for key, plan in plans.items %}
+            <div class="col-md-6">
+                <div class="plan-card {% if key == 'pro' %}popular{% endif %}">
+                    <h4 class="fw-bold">{{ plan.name }}</h4>
+                    <div class="plan-price">{{ plan.price }} <small style="font-size:1rem;">تومان / {{ plan.days }} روز</small></div>
+                    <ul>
+                        {% for feature in plan.features %}
+                            <li><i class="fas fa-check"></i>{{ feature }}</li>
+                        {% endfor %}
+                    </ul>
+                    <form method="post" action="{% url 'start_payment' key %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn {% if key == 'pro' %}btn-light fw-bold{% else %}btn-brand{% endif %} w-100"
+                                {% if not gateway_ready %}disabled{% endif %}>
+                            <i class="fas fa-credit-card ms-2"></i>پرداخت با زرین‌پال
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% if payments %}
+        <div class="section-card mt-4">
+            <h6 class="fw-bold mb-2"><i class="fas fa-receipt ms-2 text-secondary"></i>پرداخت‌های من</h6>
+            {% for p in payments %}
+                <div class="d-flex justify-content-between py-2 small" style="border-bottom:1px solid var(--line);">
+                    <span>{{ p.created_at|date:"Y/m/d" }} — پلن {{ p.plan }}</span>
+                    <span>{{ p.amount }} تومان · کد پیگیری: <span class="en">{{ p.ref_id }}</span></span>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

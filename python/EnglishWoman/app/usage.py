@@ -44,7 +44,7 @@ def consume_ai_quota(user, amount=1):
     """
     from .models import DailyActivity
     from EnglishWoman.services import get_daily_limit
-    limit = get_daily_limit()
+    limit = get_daily_limit(user)
     activity = record_activity(user)
     updated = DailyActivity.objects.filter(
         pk=activity.pk,
@@ -58,7 +58,7 @@ def usage_today(user):
     """(مصرف امروز، سقف) — برای نمایش در داشبورد."""
     from .models import DailyActivity
     from EnglishWoman.services import get_daily_limit
-    limit = get_daily_limit()
+    limit = get_daily_limit(user)
     activity = DailyActivity.objects.filter(user=user, date=timezone.localdate()).first()
     return (activity.ai_requests if activity else 0), limit
 

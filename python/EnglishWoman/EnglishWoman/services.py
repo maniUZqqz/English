@@ -35,8 +35,23 @@ def get_ai_settings():
     return api_key, base_url, model, is_active
 
 
-def get_daily_limit():
-    """سقف روزانه: مقدار ادمین اگر بزرگ‌تر از صفر باشد، وگرنه .env."""
+def get_daily_limit(user=None):
+    """
+    سقف روزانه درخواست AI:
+    1. اشتراک فعال کاربر → سقف پلن
+    2. تنظیمات ادمین (AIConfig) اگر بزرگ‌تر از صفر باشد
+    3. مقدار .env (پلن رایگان)
+    """
+    if user is not None and getattr(user, 'is_authenticated', False):
+        try:
+            from billing.models import PLANS, Subscription
+            subscription = Subscription.objects.filter(user=user).first()
+            if subscription and subscription.is_active:
+                plan = PLANS.get(subscription.plan)
+                if plan:
+                    return plan['daily_limit']
+        except Exception:
+            pass
     from app.models import AIConfig
     config = AIConfig.get()
     if config and config.daily_limit > 0:

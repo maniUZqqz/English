@@ -11,6 +11,7 @@ urlpatterns = [
     path('tools/', include('tools.urls')),
     path('classes/', include('classroom.urls')),
     path('library/', include('library.urls')),
+    path('billing/', include('billing.urls')),
 
     # بازیابی رمز عبور (در حالت توسعه، ایمیل در کنسول چاپ می‌شود)
     path('password-reset/', auth_views.PasswordResetView.as_view(
