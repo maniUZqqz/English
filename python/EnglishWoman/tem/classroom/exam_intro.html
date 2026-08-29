@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ exam.title }} — English Lady{% endblock %}
+
+{% block content %}
+<div class="container py-5" style="max-width: 560px;">
+    <a href="{% url 'class_detail' classroom.pk %}" class="text-decoration-none small">
+        <i class="fas fa-arrow-right ms-1"></i>{{ classroom.name }}
+    </a>
+    <div class="section-card text-center p-5 mt-2">
+        <div style="font-size: 3rem;">📝</div>
+        <h3 class="mt-2">{{ exam.title }}</h3>
+        {% if exam.description %}<p class="text-secondary">{{ exam.description }}</p>{% endif %}
+        <div class="d-flex justify-content-center gap-3 my-3">
+            <span class="status-chip chip-info">{{ question_count }} سوال</span>
+            <span class="status-chip chip-pending">{{ exam.duration_minutes }} دقیقه</span>
+            <span class="status-chip chip-late">فقط یک بار</span>
+        </div>
+        <p class="text-secondary small">
+            ⚠️ با زدن «شروع»، زمان از <strong>سمت سرور</strong> ثبت می‌شود — رفرش یا بستن صفحه تایمر را متوقف نمی‌کند!
+        </p>
+        <form method="post" action="{% url 'start_exam' exam.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-brand btn-lg px-5">
+                <i class="fas fa-play ms-2"></i>شروع آزمون
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -69,8 +69,8 @@
 
 {% block extra_js %}
 <script>
-    // تایمر آزمون — با اتمام زمان، فرم خودکار ارسال می‌شود
-    const totalSeconds = {{ exam.duration_minutes }} * 60;
+    // تایمر آزمون — زمان باقی‌مانده از «سرور» آمده؛ رفرش صفحه تایمر را ریست نمی‌کند
+    const totalSeconds = {{ remaining_seconds }};
     const startTime = Date.now();
     const timerEl = document.getElementById('timer');
 

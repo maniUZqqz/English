@@ -60,10 +60,18 @@ class SubmissionForm(forms.ModelForm):
             'file': forms.ClearableFileInput(attrs={'class': 'form-control'}),
         }
 
+    ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx', 'txt', 'jpg', 'jpeg', 'png', 'zip', 'mp3', 'wav'}
+
     def clean_file(self):
         file = self.cleaned_data.get('file')
-        if file and file.size > MAX_UPLOAD_MB * 1024 * 1024:
+        if not file:
+            return file
+        if file.size > MAX_UPLOAD_MB * 1024 * 1024:
             raise forms.ValidationError(f'حجم فایل نباید بیشتر از {MAX_UPLOAD_MB} مگابایت باشد.')
+        ext = file.name.rsplit('.', 1)[-1].lower() if '.' in file.name else ''
+        if ext not in self.ALLOWED_EXTENSIONS:
+            raise forms.ValidationError(
+                'فرمت فایل مجاز نیست. فرمت‌های مجاز: ' + '، '.join(sorted(self.ALLOWED_EXTENSIONS)))
         return file
 
 

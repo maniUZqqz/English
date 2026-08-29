@@ -129,25 +129,30 @@ def class_detail(request, pk):
     }
 
     if is_teacher:
-        # گزارش پیشرفت زبان‌آموزها برای معلم
-        student_rows = []
-        for student in classroom.students.all():
-            profile = _profile(student)
-            level = UserLevel.objects.filter(user=student).order_by('-created_at').first()
-            quiz_stats = student.quizuseranswer_set.aggregate(
-                total=Count('id'), correct=Count('id', filter=Q(is_correct=True)),
+        # گزارش پیشرفت زبان‌آموزها — با کوئری‌های bulk (بدون N+1)
+        from app.usage import current_streaks
+        students = list(
+            classroom.students.select_related('userlevel', 'userprofile').annotate(
+                quiz_total=Count('quizuseranswer', distinct=True),
+                quiz_correct=Count('quizuseranswer',
+                                   filter=Q(quizuseranswer__is_correct=True), distinct=True),
+                grade_avg=Avg('submissions__grade',
+                              filter=Q(submissions__assignment__classroom=classroom)),
             )
-            grade_avg = Submission.objects.filter(
-                student=student, assignment__classroom=classroom, grade__isnull=False,
-            ).aggregate(avg=Avg('grade'))['avg']
+        )
+        streaks = current_streaks([s.id for s in students])
+        student_rows = []
+        for student in students:
+            level = getattr(student, 'userlevel', None)
+            profile = getattr(student, 'userprofile', None)
             student_rows.append({
                 'user': student,
                 'level': strip_tags(level.level_title).strip() if level else '—',
-                'progress': profile.progress,
-                'streak': current_streak(student),
-                'quiz_total': quiz_stats['total'],
-                'quiz_correct': quiz_stats['correct'],
-                'grade_avg': round(grade_avg) if grade_avg is not None else None,
+                'progress': profile.progress if profile else 0,
+                'streak': streaks.get(student.id, 0),
+                'quiz_total': student.quiz_total,
+                'quiz_correct': student.quiz_correct,
+                'grade_avg': round(student.grade_avg) if student.grade_avg is not None else None,
             })
         assignment_rows = [{
             'assignment': a,
@@ -262,6 +267,9 @@ def submit_assignment(request, pk):
     if not classroom.students.filter(id=request.user.id).exists():
         return HttpResponseForbidden('فقط زبان‌آموزهای عضو کلاس می‌توانند تکلیف تحویل دهند.')
     if request.method == 'POST':
+        if assignment.is_past_due:
+            messages.error(request, 'مهلت تحویل این تکلیف گذشته است.')
+            return redirect('assignment_detail', pk=pk)
         submission = Submission.objects.filter(assignment=assignment, student=request.user).first()
         if submission and submission.is_graded:
             messages.error(request, 'این تکلیف نمره گرفته و دیگر قابل ویرایش نیست.')
@@ -438,16 +446,36 @@ def exam_detail(request, pk):
     if not exam.is_published:
         return HttpResponseForbidden('این آزمون هنوز منتشر نشده است.')
     attempt = ExamAttempt.objects.filter(exam=exam, student=request.user).first()
-    if attempt:
+    if attempt and attempt.finished_at:
         # نمایش کارنامه‌ی این آزمون
         answers = {a.question_id: a for a in attempt.answers.all()}
         rows = [{'question': q, 'answer': answers.get(q.id)} for q in questions]
         return render(request, 'classroom/exam_result.html', {
             'exam': exam, 'classroom': classroom, 'attempt': attempt, 'rows': rows,
         })
-    return render(request, 'classroom/exam_take.html', {
-        'exam': exam, 'classroom': classroom, 'questions': questions,
+    if attempt:
+        # آزمونِ در جریان — زمان باقی‌مانده از سرور محاسبه می‌شود (رفرش تایمر را ریست نمی‌کند)
+        elapsed = (timezone.now() - attempt.started_at).total_seconds()
+        remaining = max(0, int(exam.duration_minutes * 60 - elapsed))
+        return render(request, 'classroom/exam_take.html', {
+            'exam': exam, 'classroom': classroom, 'questions': questions,
+            'remaining_seconds': remaining,
+        })
+    # هنوز شروع نکرده — صفحه معرفی با دکمه شروع
+    return render(request, 'classroom/exam_intro.html', {
+        'exam': exam, 'classroom': classroom, 'question_count': questions.count(),
     })
+
+
+@login_required(login_url='login')
+def start_exam(request, pk):
+    """شروع رسمی آزمون — زمان شروع سمت سرور ثبت می‌شود."""
+    exam = get_object_or_404(ClassExam.objects.select_related('classroom'), pk=pk, is_published=True)
+    if not exam.classroom.students.filter(id=request.user.id).exists():
+        return HttpResponseForbidden('فقط زبان‌آموزهای عضو کلاس می‌توانند در آزمون شرکت کنند.')
+    if request.method == 'POST':
+        ExamAttempt.objects.get_or_create(exam=exam, student=request.user)
+    return redirect('exam_detail', pk=pk)
 
 
 @teacher_required
@@ -543,15 +571,23 @@ def take_exam(request, pk):
         return HttpResponseForbidden('فقط زبان‌آموزهای عضو کلاس می‌توانند در آزمون شرکت کنند.')
     if request.method != 'POST':
         return redirect('exam_detail', pk=pk)
-    if ExamAttempt.objects.filter(exam=exam, student=request.user).exists():
+
+    attempt = ExamAttempt.objects.filter(exam=exam, student=request.user).first()
+    if attempt is None:
+        messages.error(request, 'اول باید آزمون را شروع کنید.')
+        return redirect('exam_detail', pk=pk)
+    if attempt.finished_at:
         messages.error(request, 'شما قبلاً در این آزمون شرکت کرده‌اید.')
         return redirect('exam_detail', pk=pk)
 
     questions = list(exam.questions.all())
-    attempt = ExamAttempt.objects.create(exam=exam, student=request.user)
+    # کنترل زمان سمت سرور: مهلت + ۶۰ ثانیه ارفاق شبکه
+    elapsed = (timezone.now() - attempt.started_at).total_seconds()
+    out_of_time = elapsed > exam.duration_minutes * 60 + 60
+
     correct = 0
     for q in questions:
-        selected = (request.POST.get(f'q_{q.id}') or '').upper()[:1]
+        selected = '' if out_of_time else (request.POST.get(f'q_{q.id}') or '').upper()[:1]
         is_correct = selected == q.correct_option
         if is_correct:
             correct += 1
@@ -562,7 +598,10 @@ def take_exam(request, pk):
     attempt.finished_at = timezone.now()
     attempt.save()
     record_activity(request.user)
-    messages.success(request, f'آزمون ثبت شد — نمره شما: {attempt.score} از ۱۰۰')
+    if out_of_time:
+        messages.error(request, 'پاسخ‌ها بعد از پایان زمان رسید و ثبت نشد — نمره: ۰')
+    else:
+        messages.success(request, f'آزمون ثبت شد — نمره شما: {attempt.score} از ۱۰۰')
     return redirect('exam_detail', pk=pk)
 
 

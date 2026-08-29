@@ -158,7 +158,7 @@
         <div id="question-wrapper">
             {% for q in quiz_questions %}
                 <div class="question-block {% if forloop.first %}active{% else %}hidden{% endif %}"
-                     data-question-id="{{ q.id }}" data-correct="{{ q.correct_option }}">
+                     data-question-id="{{ q.id }}">
                     <div class="question">
                         <i class="fas fa-question-circle me-2"></i>
                         {{ q.question_text }}
@@ -211,7 +211,6 @@
 
     function selectOption(el) {
         const parent = el.closest('.question-block');
-        const correctOption = parent.dataset.correct;
         const questionId = parent.dataset.questionId;
         const selectedOption = el.dataset.option;
 
@@ -231,11 +230,12 @@
             .then(res => res.json())
             .then(data => {
                 if (data.success) {
+                    // گزینه درست از پاسخ سرور می‌آید (داخل صفحه لو نمی‌رود)
                     if (data.is_correct) {
                         el.classList.add('correct');
                     } else {
                         el.classList.add('incorrect');
-                        const correctEl = parent.querySelector(`.option[data-option="${correctOption}"]`);
+                        const correctEl = parent.querySelector(`.option[data-option="${data.correct_option}"]`);
                         if (correctEl) correctEl.classList.add('correct');
                     }
                 }

@@ -94,6 +94,31 @@
         border-color: #2980b9;
     }
 
+    .level-test-option.correct-answer {
+        background: #28a745 !important;
+        color: white !important;
+        border-color: #218838 !important;
+    }
+
+    .level-test-option.wrong-answer {
+        background: #dc3545 !important;
+        color: white !important;
+        border-color: #c82333 !important;
+    }
+
+    .level-test-options.locked .level-test-option { pointer-events: none; }
+
+    #answer-feedback {
+        border-radius: 12px;
+        padding: 0.8rem 1.2rem;
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+        display: none;
+    }
+
+    #answer-feedback.ok { display: block; background: rgba(40,167,69,0.15); color: #28a745; }
+    #answer-feedback.bad { display: block; background: rgba(220,53,69,0.15); color: #e05d4d; }
+
     .level-test-option i { font-size: 1.2rem; opacity: 0.7; }
     .level-test-option.selected i { opacity: 1; }
 
@@ -205,6 +230,8 @@
         {% endfor %}
     </div>
 
+    <div id="answer-feedback"></div>
+
     <button class="level-test-button" onclick="nextQuestion()">
         سوال بعدی<i class="fas fa-arrow-left ms-2"></i>
     </button>
@@ -267,6 +294,9 @@
         formData.append('question_id', questionId);
         formData.append('selected_option', selectedOption);
 
+        const optionsContainer = document.querySelector('.level-test-options');
+        optionsContainer.classList.add('locked'); // قفل تا نمایش فیدبک
+
         fetch("{% url 'submit_response' %}", {
             method: 'POST',
             body: formData,
@@ -274,34 +304,51 @@
         })
             .then(response => response.json())
             .then(data => {
-                if (data.feedback) {
-                    alert(data.feedback);
-                }
-
-                if (data.next_question) {
-                    document.getElementById('question-count').innerText =
-                        `Question ${data.next_question.question_number} of ${data.next_question.total_questions}`;
-                    document.querySelector('.progress-fill').style.width = `${data.next_question.progress}%`;
-
-                    questionEl.setAttribute('data-question-id', data.next_question.id);
-                    document.getElementById('question-text').innerText = data.next_question.text;
-
-                    const optionsContainer = document.querySelector('.level-test-options');
-                    optionsContainer.innerHTML = '';
-                    data.next_question.options.forEach((opt, index) => {
-                        const optionDiv = document.createElement('div');
-                        optionDiv.classList.add('level-test-option');
-                        optionDiv.setAttribute('data-option-index', index + 1);
-                        optionDiv.setAttribute('onclick', 'selectOption(this)');
-                        optionDiv.innerHTML = '<i class="fas fa-circle"></i>' + opt;
-                        optionsContainer.appendChild(optionDiv);
-                    });
+                // فیدبک فوری داخل صفحه: گزینه انتخابی سبز/قرمز + نمایش گزینه درست
+                const feedbackEl = document.getElementById('answer-feedback');
+                selectedEl.classList.remove('selected');
+                if (data.is_correct) {
+                    selectedEl.classList.add('correct-answer');
+                    feedbackEl.className = 'ok';
+                    feedbackEl.textContent = '✓ آفرین، درست بود!';
                 } else {
-                    alert('آزمون تمام شد!');
-                    window.location.href = "{% url 'test-completed' %}";
+                    selectedEl.classList.add('wrong-answer');
+                    const correctEl = optionsContainer.querySelector(`[data-option-index="${data.correct_option}"]`);
+                    if (correctEl) correctEl.classList.add('correct-answer');
+                    feedbackEl.className = 'bad';
+                    feedbackEl.textContent = '✗ نادرست — گزینه درست سبز شد.';
                 }
+
+                setTimeout(() => {
+                    feedbackEl.className = '';
+                    feedbackEl.textContent = '';
+                    if (data.next_question) {
+                        document.getElementById('question-count').innerText =
+                            `سوال ${data.next_question.question_number} از ${data.next_question.total_questions}`;
+                        document.querySelector('.progress-fill').style.width = `${data.next_question.progress}%`;
+
+                        questionEl.setAttribute('data-question-id', data.next_question.id);
+                        document.getElementById('question-text').innerText = data.next_question.text;
+
+                        optionsContainer.innerHTML = '';
+                        optionsContainer.classList.remove('locked');
+                        data.next_question.options.forEach((opt, index) => {
+                            const optionDiv = document.createElement('div');
+                            optionDiv.classList.add('level-test-option');
+                            optionDiv.setAttribute('data-option-index', index + 1);
+                            optionDiv.setAttribute('onclick', 'selectOption(this)');
+                            optionDiv.innerHTML = '<i class="fas fa-circle"></i>' + opt;
+                            optionsContainer.appendChild(optionDiv);
+                        });
+                    } else {
+                        window.location.href = "{% url 'test-completed' %}";
+                    }
+                }, 1400);
             })
-            .catch(error => console.error('Error:', error));
+            .catch(error => {
+                optionsContainer.classList.remove('locked');
+                console.error('Error:', error);
+            });
     }
 </script>
 {% endblock %}

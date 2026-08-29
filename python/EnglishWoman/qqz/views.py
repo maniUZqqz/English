@@ -84,8 +84,9 @@ def Teach(request):
         try:
             md_content = chat_completion(conversation)
         except Exception as e:
+            # درس‌نامه‌ی خراب کش نشود — صفحه خطای شفاف نمایش بده
             print("AI error:", e)
-            md_content = "# Lesson\nContent not available at the moment."
+            return render(request, 'app/ai_error.html', status=503)
 
         # پاک‌سازی متن خروجی از AI
         md_content_clean = md_content.strip()
@@ -313,7 +314,12 @@ def submit_quiz_answer(request):
             quiz_question=question,
             defaults={'selected_option': selected_option}
         )
-        return JsonResponse({'success': True, 'is_correct': answer.is_correct})
+        # گزینه درست فقط «بعد از پاسخ» از سرور برمی‌گردد (نه داخل HTML صفحه)
+        return JsonResponse({
+            'success': True,
+            'is_correct': answer.is_correct,
+            'correct_option': question.correct_option,
+        })
     else:
         return HttpResponseBadRequest("روش درخواست نامعتبر است.")
 

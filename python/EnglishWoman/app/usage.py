@@ -55,6 +55,28 @@ def usage_today(user):
     return (activity.ai_requests if activity else 0), limit
 
 
+def current_streaks(user_ids):
+    """استریک چند کاربر با یک کوئری (برای گزارش معلم — بدون N+1)."""
+    from .models import DailyActivity
+    today = timezone.localdate()
+    dates_by_user = {}
+    for user_id, date in DailyActivity.objects.filter(
+        user_id__in=user_ids, date__gte=today - timedelta(days=366),
+    ).values_list('user_id', 'date'):
+        dates_by_user.setdefault(user_id, set()).add(date)
+
+    result = {}
+    for user_id in user_ids:
+        dates = dates_by_user.get(user_id, set())
+        day = today if today in dates else today - timedelta(days=1)
+        streak = 0
+        while day in dates:
+            streak += 1
+            day -= timedelta(days=1)
+        result[user_id] = streak
+    return result
+
+
 def current_streak(user):
     """تعداد روزهای پیاپی فعالیت. اگر امروز هنوز فعالیتی نبوده، زنجیره تا دیروز حساب می‌شود."""
     from .models import DailyActivity

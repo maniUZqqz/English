@@ -114,6 +114,23 @@ class AssignmentFlowTests(TestCase):
         submission = Submission.objects.get(assignment=self.assignment, student=self.student)
         self.assertEqual(submission.text, 'Original.')
 
+    def test_submit_after_due_date_rejected(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        self.assignment.due_date = timezone.now() - timedelta(hours=1)
+        self.assignment.save()
+        self.client.login(username='stud', password='pass12345')
+        self.client.post(reverse('submit_assignment', args=[self.assignment.pk]), {'text': 'Late!'})
+        self.assertFalse(Submission.objects.filter(assignment=self.assignment).exists())
+
+    def test_disallowed_file_extension_rejected(self):
+        from django.core.files.uploadedfile import SimpleUploadedFile
+        self.client.login(username='stud', password='pass12345')
+        bad_file = SimpleUploadedFile('virus.exe', b'MZ...', content_type='application/octet-stream')
+        self.client.post(reverse('submit_assignment', args=[self.assignment.pk]),
+                         {'text': 'with file', 'file': bad_file})
+        self.assertFalse(Submission.objects.filter(assignment=self.assignment).exists())
+
     def test_other_teacher_cannot_grade(self):
         submission = Submission.objects.create(
             assignment=self.assignment, student=self.student, text='Done.')
@@ -171,7 +188,14 @@ class ExamFlowTests(TestCase):
         exam = self._make_exam(questions=2)
         self.client.login(username='examstud', password='pass12345')
         questions = list(exam.questions.all())
-        response = self.client.post(reverse('take_exam', args=[exam.pk]), {
+        # بدون «شروع»، ارسال پاسخ پذیرفته نمی‌شود
+        self.client.post(reverse('take_exam', args=[exam.pk]), {f'q_{questions[0].id}': 'A'})
+        self.assertFalse(ExamAttempt.objects.filter(exam=exam).exists())
+        # شروع رسمی (زمان سمت سرور ثبت می‌شود)
+        self.client.post(reverse('start_exam', args=[exam.pk]))
+        self.assertTrue(ExamAttempt.objects.filter(exam=exam, finished_at=None).exists())
+        # ارسال پاسخ‌ها
+        self.client.post(reverse('take_exam', args=[exam.pk]), {
             f'q_{questions[0].id}': 'A',  # درست
             f'q_{questions[1].id}': 'B',  # غلط
         })
@@ -185,6 +209,34 @@ class ExamFlowTests(TestCase):
         # صفحه نتیجه نمره را نشان می‌دهد
         page = self.client.get(reverse('exam_detail', args=[exam.pk]))
         self.assertContains(page, '50')
+
+    def test_answers_after_time_limit_score_zero(self):
+        from datetime import timedelta
+        from django.utils import timezone
+        from .models import ExamAttempt
+        exam = self._make_exam(questions=1)
+        self.client.login(username='examstud', password='pass12345')
+        self.client.post(reverse('start_exam', args=[exam.pk]))
+        # زمان شروع را به گذشته ببریم (فراتر از مهلت + ارفاق)
+        attempt = ExamAttempt.objects.get(exam=exam, student=self.student)
+        ExamAttempt.objects.filter(pk=attempt.pk).update(
+            started_at=timezone.now() - timedelta(minutes=exam.duration_minutes + 5))
+        question = exam.questions.first()
+        self.client.post(reverse('take_exam', args=[exam.pk]), {f'q_{question.id}': 'A'})
+        attempt.refresh_from_db()
+        self.assertEqual(attempt.score, 0)
+
+    def test_exam_intro_shown_before_start_and_timer_survives_refresh(self):
+        exam = self._make_exam(questions=1)
+        self.client.login(username='examstud', password='pass12345')
+        # قبل از شروع: صفحه معرفی
+        page = self.client.get(reverse('exam_detail', args=[exam.pk]))
+        self.assertTemplateUsed(page, 'classroom/exam_intro.html')
+        # بعد از شروع: صفحه آزمون با زمان باقی‌مانده از سرور
+        self.client.post(reverse('start_exam', args=[exam.pk]))
+        page = self.client.get(reverse('exam_detail', args=[exam.pk]))
+        self.assertTemplateUsed(page, 'classroom/exam_take.html')
+        self.assertLessEqual(page.context['remaining_seconds'], exam.duration_minutes * 60)
 
     def test_unpublished_exam_hidden_from_student(self):
         exam = self._make_exam(published=False)

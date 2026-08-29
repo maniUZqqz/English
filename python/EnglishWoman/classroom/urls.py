@@ -22,6 +22,7 @@ urlpatterns = [
     path('exam/<int:pk>/questions/<int:question_id>/delete/', views.delete_exam_question, name='delete_exam_question'),
     path('exam/<int:pk>/ai-questions/', views.ai_exam_questions, name='ai_exam_questions'),
     path('exam/<int:pk>/publish/', views.publish_exam, name='publish_exam'),
+    path('exam/<int:pk>/start/', views.start_exam, name='start_exam'),
     path('exam/<int:pk>/take/', views.take_exam, name='take_exam'),
     # کارنامه
     path('<int:pk>/report/', views.report_card, name='my_report_card'),

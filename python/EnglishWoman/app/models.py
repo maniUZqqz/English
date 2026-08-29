@@ -29,7 +29,8 @@ class UserResponse(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 class UserLevel(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    # OneToOne: هر کاربر دقیقاً یک سطح دارد (آزمون مجدد همان ردیف را به‌روز می‌کند)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
     level_title = models.CharField(max_length=255)      # عنوان سطح کاربر
     level_explanation = models.TextField()             # توضیحات مربوط به سطح کاربر
     created_at = models.DateTimeField(auto_now_add=True)

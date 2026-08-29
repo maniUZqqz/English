@@ -113,7 +113,8 @@ def home(request):
 def generate_questions(user):
     """
     تولید 10 سوال گرامری برای «همین کاربر» از طریق API.
-    اگر مشکلی پیش بیاید، سوالات نمونه ایجاد می‌شوند.
+    در صورت خطا، exception بالا می‌رود تا صفحه خطای شفاف نمایش داده شود
+    (به جای سوالات نمونه‌ی بی‌معنی).
     """
     prompt = (
         "Generate 10 multiple choice English grammar questions in JSON format. "
@@ -126,32 +127,20 @@ def generate_questions(user):
         {"role": "system", "content": "You are a question generator for an English grammar placement test."},
         {"role": "user", "content": prompt},
     ]
-    try:
-        generated_text = chat_completion(conversation_history)
-        questions_data = extract_json(generated_text)
-        for q in questions_data:
-            Question.objects.create(
-                user=user,
-                text=q.get("text", "No question text provided"),
-                option1=q.get("option1", "Option A"),
-                option2=q.get("option2", "Option B"),
-                option3=q.get("option3", "Option C"),
-                option4=q.get("option4", "Option D"),
-                correct_option=int(q.get("correct_option", 1)),
-            )
-    except Exception as e:
-        print("Error generating questions:", e)
-        # در صورت بروز خطا، سوالات نمونه ایجاد می‌شود
-        for i in range(10):
-            Question.objects.create(
-                user=user,
-                text=f"Sample question {i + 1}",
-                option1="Option A",
-                option2="Option B",
-                option3="Option C",
-                option4="Option D",
-                correct_option=1,
-            )
+    generated_text = chat_completion(conversation_history)
+    questions_data = extract_json(generated_text)
+    if not questions_data:
+        raise ValueError('Empty question list from AI')
+    for q in questions_data:
+        Question.objects.create(
+            user=user,
+            text=q.get("text", "No question text provided"),
+            option1=q.get("option1", "Option A"),
+            option2=q.get("option2", "Option B"),
+            option3=q.get("option3", "Option C"),
+            option4=q.get("option4", "Option D"),
+            correct_option=int(q.get("correct_option", 1)),
+        )
 
 
 @login_required(login_url='login')
@@ -167,7 +156,11 @@ def level_determination(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     profile.progress = 0
     profile.save()
-    generate_questions(request.user)
+    try:
+        generate_questions(request.user)
+    except Exception as e:
+        print('generate_questions failed:', e)
+        return render(request, 'app/ai_error.html', status=503)
     first_q = Question.objects.filter(user=request.user).order_by('id').first()
     return render(request, 'app/level-determination.html', {
         'question': first_q,
@@ -205,13 +198,13 @@ def submit_response(request):
     profile, _ = UserProfile.objects.get_or_create(user=request.user)
     profile.progress = progress
     profile.save()
-    # پیدا کردن سوال بعدی
+    # پیدا کردن سوال بعدی — فیدبک فوری و محلی (بدون فراخوانی AI برای هر پاسخ)
     nxt = user_questions.filter(id__gt=q.id).order_by('id').first()
     if nxt:
         qnum = user_questions.filter(id__lte=q.id).count() + 1
         return JsonResponse({
             'is_correct': correct,
-            'feedback': _get_feedback(q, sel, request.user),
+            'correct_option': q.correct_option,
             'next_question': {
                 'id': nxt.id,
                 'text': nxt.text,
@@ -225,30 +218,10 @@ def submit_response(request):
     else:
         return JsonResponse({
             'is_correct': correct,
-            'feedback': _get_feedback(q, sel, request.user),
+            'correct_option': q.correct_option,
             'test_completed': True,
             'progress': progress,
         })
-
-
-def _get_feedback(question, selected_option, user):
-    # اگر سهمیه تمام شده باشد، آزمون بدون فیدبک ادامه پیدا می‌کند (خطای سخت نمی‌دهیم)
-    try:
-        consume_ai_quota(user)
-    except QuotaExceeded:
-        return "No feedback available."
-    convo = [
-        {"role": "system", "content": (
-            "You are an English grammar teaching assistant. "
-            "Give a very short (max 2 sentences) feedback on the user's answer: "
-            "say whether it is correct and why."
-        )},
-        {"role": "user", "content": f"Question: {question.text}\nUser's answer: Option {selected_option}"},
-    ]
-    try:
-        return chat_completion(convo)
-    except Exception:
-        return "No feedback available."
 
 
 @login_required(login_url='login')
@@ -310,7 +283,13 @@ def register_view(request):
     return render(request, "app/register.html", {"form": form})
 
 
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_LOCKOUT_SECONDS = 600  # ۱۰ دقیقه
+
+
 def login_view(request):
+    from django.core.cache import cache
+
     if request.user.is_authenticated:
         return redirect("home")
     if request.method == "POST":
@@ -318,11 +297,19 @@ def login_view(request):
         if form.is_valid():
             username = form.cleaned_data["username"]
             password = form.cleaned_data["password"]
+            # محدودیت تلاش ناموفق (ضد brute-force)
+            throttle_key = f"login_fail:{username.lower()}"
+            fails = cache.get(throttle_key, 0)
+            if fails >= LOGIN_MAX_ATTEMPTS:
+                form.add_error(None, "تلاش‌های ناموفق زیاد بود — ۱۰ دقیقه بعد دوباره امتحان کنید.")
+                return render(request, "app/login.html", {"form": form})
             user = authenticate(username=username, password=password)
             if user:
+                cache.delete(throttle_key)
                 login(request, user)
                 return redirect("home")
             else:
+                cache.set(throttle_key, fails + 1, LOGIN_LOCKOUT_SECONDS)
                 form.add_error(None, "نام کاربری یا رمز عبور اشتباه است.")
     else:
         form = LoginForm()
